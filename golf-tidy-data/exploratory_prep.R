@@ -5,9 +5,11 @@ theme_set(theme_bw())
 
 gh <- "https://raw.githubusercontent.com/bgstieber/files_for_blog/master/golf-tidy-data/data"
 
-tidy_scores <- read_csv(paste0(gh, '/tidy_golf_scores.csv'))
+tidy_scores <- read_csv(paste0(gh, '/tidy_golf_scores.csv')) %>%
+  filter(tot <= 120)
 
-untidy_scores <- read_csv(paste0(gh, '/untidy_golf_scores.csv'))
+untidy_scores <- read_csv(paste0(gh, '/untidy_golf_scores.csv')) %>%
+  filter(tot <= 120)
 
 head(tidy_scores)
 # hardest hole?
@@ -17,8 +19,9 @@ tidy_scores %>%
   ggplot(aes(reorder(hole, avg_rel_to_par), avg_rel_to_par,
              fill = factor(par)))+
   geom_col(colour = 'black')+
+  geom_hline(aes(yintercept = mean(tidy_scores$rel_to_par)))+
   coord_flip()+
-  xlab('Hole')+
+  xlab('Hole (ordered by difficulty)')+
   ylab('Average Relative to Par')+
   scale_fill_brewer(name = 'Par')
 
@@ -100,9 +103,16 @@ dummy_table2 <- tidy_scores3 %>%
   select(hole_f, broke_90) %>%
   unique()
 
-dummy_preds <- cbind(dummy_table2, predict(fit2,
-                       newdata = dummy_table2,
-                       interval = 'prediction'))
+dummy_preds <- cbind(dummy_table2,
+                     predict(fit2, 
+                             newdata = dummy_table2, 
+                             interval = 'prediction'))
+
+dummy_preds %>%
+  ggplot(aes(reorder(hole_f, fit), 
+             fit, ymin = lwr, ymax = upr, colour = broke_90))+
+  geom_pointrange(position = position_dodge(width = 1))+
+  coord_flip()
 
 dummy_preds  %>%
   select(hole_f, broke_90, fit) %>%

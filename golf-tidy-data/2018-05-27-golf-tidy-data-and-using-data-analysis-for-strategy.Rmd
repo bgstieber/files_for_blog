@@ -1,0 +1,49 @@
+---
+title: POST IN PROGRESS-Golf, Tidy Data, and Using Data Analysis for Strategy
+author: ''
+date: '2018-05-27'
+publishdate: "2018-06-01"
+slug: golf-tidy-data-and-using-data-analysis-for-strategy
+draft: true
+categories:
+  - R
+tags:
+  - r
+  - data-science
+  - tidy-data
+  - web-scraping
+  - golf
+  - strategy
+  - data-analysis
+subtitle: ''
+output: 
+  html_document: 
+    toc: yes
+    toc_depth: 4
+    code_folding: hide
+---
+
+## Introduction
+
+I'm going to use this post to discuss some of the aspects of data science that interest me most (using data to guide strategy and tidy data). First, I'm going to look at acquiring data from a webpage. In my opinion, this data isn't in a tidy format, and needs to be reshaped a bit. Once we get the data into a tidy form, we can 
+
+## Getting the data
+
+First I'm going to load a few packages. 
+
+```{r message = FALSE, warning = FALSE}
+library(tidyverse)
+library(scales)
+theme_set(theme_bw())
+```
+
+I've already scraped the data and cleaned it up a bit. I've thrown the code and data in a [github repository](https://github.com/bgstieber/files_for_blog/tree/master/golf-tidy-data). 
+
+```{r}
+gh <- "https://github.com/bgstieber/files_for_blog/tree/master/golf-tidy-data"
+
+tidy_scores <- read_csv
+
+
+```
+
