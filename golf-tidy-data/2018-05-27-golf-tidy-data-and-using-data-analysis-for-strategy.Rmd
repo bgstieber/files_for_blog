@@ -1,10 +1,10 @@
 ---
-title: POST IN PROGRESS-Golf, Tidy Data, and Using Data Analysis for Strategy
+title: Golf, Tidy Data, and Using Data Analysis for Strategy
 author: ''
-date: '2018-05-27'
-publishdate: "2018-06-01"
+date: '2018-06-24'
+publishdate: "2018-06-24"
 slug: golf-tidy-data-and-using-data-analysis-for-strategy
-draft: true
+draft: false
 categories:
   - R
 tags:
@@ -16,10 +16,7 @@ tags:
   - strategy
   - data-analysis
 subtitle: ''
-output: 
-  html_document: 
-    toc: yes
-    toc_depth: 4
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -29,7 +26,7 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE,
 
 ## Introduction
 
-I'm going to use this post to discuss some of the aspects of data science that interest me most (tidy data as well as using data to guide strategy). 
+I'm going to use this post to discuss some of the aspects of data science that interest me most (tidy data as well as using data to guide strategy). I'm going to discuss these topics through the lens of a data analysis of results from a few high school golf tournaments. 
 
 I'm going to take a little bit of time to talk about [__tidy data__](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html). When I scraped the data used for this analysis, it wasn't really stored in a tidy format, and there's a good reason for that. I'll briefly discuss what makes the original data "untidy", and what we can do to whip it into tidy shape.
 
@@ -38,7 +35,17 @@ After that, I'll explore the data a little bit, with the goal of using the findi
   1. improve strategy on the golf course
   2. inspire ideas for looking deeper at the data
   
-Finally, I'll show how we can use [linear models](https://en.wikipedia.org/wiki/Linear_model) along with [mixed effect linear models](https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf) to build statistical models which allow us to quantify differences between groups.
+Finally, I'll show how we can use [linear models](https://en.wikipedia.org/wiki/Linear_model) along with [mixed effect linear models](https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf) to build statistical models which allow us to quantify differences between groups of interest.
+
+Here are the questions I hope to answer using data along with some domain knowledge I've built around golf:
+
+  - What are the most difficult holes? Why are they difficult?
+  - What is the easiest hole? What makes it easier than the rest?
+  - Are there clear differences in scores between regional and sectional golf tournaments?
+  - What separates the better high school golfers (those that break 90) from the other golfers?
+  - What are some general strategy guidelines for playing this golf course?
+
+All of the analysis in this post was performed using `R`. I've omitted some of the code used to generate plots to improve readability, the full .Rmd file can be found [on my GitHub]().
 
 ## Some Useful Context
 
@@ -52,9 +59,10 @@ url <- "https://photos.bluegolf.com/bd/10/80/e2/4bef45efb375fe1ae2739672_l.jpg"
 
 <center><img src="`r url`"></center>
 
-Regional tournaments come before sectionals, with teams and individuals playing well in the regional tournament advancing to sectionals. Teams and individuals that play well in the sectional tournament will advance to the state tournament. It is a fair (and testable!) hypothesis that scores will tend to be better in sectional tournaments. 
 
-This analysis will involve looking at the results from these tournaments, and using the findings to potentially guide strategy on the golf course. 
+
+Regional tournaments come before sectionals, with teams and individuals that played well in the regional tournament advancing to sectionals. Teams and individuals that play well in the sectional tournament will advance to the state tournament. It is a fair (and testable!) hypothesis that scores will tend to be better in sectional tournaments. 
+
 
 ## Hitting the Range: Show me the data
 
@@ -83,11 +91,14 @@ untidy_scores <- read_csv(paste0(gh, '/untidy_golf_scores.csv')) %>%
   filter(tot <= 120)
 ```
 
+In total, the data is comprised of `r nrow(untidy_scores)` golfers with scores for each of the 18 holes they played. In total, there are `r nrow(tidy_scores)` scores in this data set. 
+
 Let's take a peek at the first view rows of each data set. The first data set we'll look at is the untidy data, this is fairly close to what the WIAA provides on the webpages for each of the tournaments.
 
 ```{r echo = FALSE}
 untidy_scores %>% head %>% datatable()
 ```
+This is an example of a "wide" data set.
 
 Now let's take a look at the first few rows of the tidy data.
 
@@ -97,13 +108,13 @@ tidy_scores %>% head %>% datatable()
 
 ## Putting Practice: What makes data tidy?
 
-In some ways, recognizing tidy/untidy data can be one of those [I know it when I see it](https://en.wikipedia.org/wiki/I_know_it_when_I_see_it) things. We can follow the fairly solid guidelines [Hadley Wickham has proposed](https://www.jstatsoft.org/article/view/v059i10) to make the distinction a bit more concrete (if you haven't read that paper, I __highly__ recommend it).
+In some ways, recognizing tidy/untidy data can be one of those [_I know it when I see it_](https://en.wikipedia.org/wiki/I_know_it_when_I_see_it) things. We can follow the fairly solid guidelines [Hadley Wickham has proposed](https://www.jstatsoft.org/article/view/v059i10) to make the distinction a bit more concrete (if you haven't read that paper, I __highly__ recommend it):
 
   - Each __variable__ is a column
   - Each __observation__ is a row
   - Each type of observational unit is a table (this isn't as important for this post)
   
-It's important to think about those two bolded words within the context of this analysis. We're interested in strategizing our way through a golf course, to hopefully play our best. Playing our best means minimizing mistakes _throughout_ a round of golf. 
+It's important to think about those two bolded words within the context of this analysis. We're interested in making our way around a golf course, to hopefully play our best. Playing our best means minimizing mistakes _throughout_ a round of golf. 
 
 Some people like to think of golf as a game composed of 18 "mini games" within it. For an analysis with the primary focus of identifying ways to get around the course as strategically as possible, I think the best way to look at the data is to have each observational unit be the score on __one hole__ for __each competitor__. Our tidy data set is constructed this way, with __one row per competitor per hole__. The untidy data has a structure of __one row per competitor__. This structure may be useful if we're only interested in looking at final scores for each competitor. It's also useful for a concise summary of a competitor's performance on a website (which was its original purpose).
 
@@ -151,7 +162,7 @@ tidy_scores %>%
           subtitle = paste0('Cells are colored according to count',
                             ' of participants with that score for the hole.\n',
                             'Percentages within each cell show the frequency of',
-                            'participants with that score for the hole.'))+
+                            ' participants with that score for the hole.'))+
   theme(panel.grid = element_blank())+
   theme_minimal()
 ```
@@ -159,10 +170,10 @@ tidy_scores %>%
 We're able to see a few things pretty quickly from the heatmap above:
 
   - Holes 4 and 12 are clearly the hardest on the course, with over 50% of the field making double bogey or worse
-  - Hole 11 is the easiest on the course, with the highest percent of the field making a birdie or better, and the lowest percentage making double or worse.
+  - Hole 11 is the easiest on the course, with the highest percentage of the field making a birdie or better, and the lowest percentage making double or worse.
   - About 50% of the field made a bogey on 13, which is a par 3
 
-Next, we're going to take a look at the average score relative to par for each of the 18 holes played at PV.  
+Next, we're going to take a look at the average score relative to par for each of the 18 holes played at PV. Each of the 18 holes played at least one stroke over par.
 
 ```{r echo = FALSE}
 tidy_scores %>%
@@ -190,21 +201,21 @@ PV was my home course growing up, so here's a little _local knowledge_ about eac
 
 #### Hole 12
 
-12 is the longest par 4 on the course, playing at about 420 yards from the back tees. The tee shot can be intimidating with out-of-bounds along the left, and some trees and mounds on the right. This hole seemed to play into the wind more often than downwind, making it even longer than the 420 yards on the card.
+12 is the longest par 4 on the course, playing at about 430 yards from the back tees. The tee shot can be intimidating with out-of-bounds along the left, and some trees and mounds on the right. This hole seemed to play into the wind more often than downwind, making it even longer than the 430 yards on the card.
 
 #### Hole 4
 
-4 is rated as the hardest hole on the golf course according to the USGA handicapping system. The tee shot can be somewhat difficult, with out-of-bounds, trees, and water on the left, and more trees on the right. That being said, the hole is not overly long, so hitting something less than driver is not a bad route. The green is guarded by a stream in front of it, and hilly terrain surrounding it.
+4 is rated as the hardest hole on the golf course according to the USGA handicapping system. The tee shot can be somewhat difficult, with out-of-bounds, trees, and water on the left, and more trees on the right. That being said, the hole is not overly long, so hitting something less than driver is not a bad route. The green is guarded by a stream in front of it, and hilly terrain surrounding it. Putting on this green can be difficult, as it has a lot of slope and undulation.
 
 #### Hole 7
 
-7 is a short dogleg left. The main difficulty on this hole is the tight dogleg golfers must navigate off the tee. There are trees which can block an approach shot if the tee shot veers too far right, and hills along with trees and water on the left side for those getting too aggressive off the tee. The approach into the green (provided one has a clear shot) is not that difficult, with no bunkers and a lot of room to miss. The major difficulty on this hole is the tee shot, from there it's fairly straightforward.
+7 is a short dogleg left. The main difficulty on this hole is the tight dogleg golfers must navigate off the tee. There are trees which can block an approach shot if the tee shot veers too far right, and hills along with trees and water on the left side for those getting too aggressive off the tee. The approach into the green (provided one has a clear shot) is not that difficult, with no bunkers and a lot of room to miss. The major difficulty on this hole is the tee shot, but from there it's fairly straightforward.
 
 #### Hole 1
 
-1 is a shorter par 5 with a daunting tee shot. There's OB on the left side, and trees and fescue along the right side. On top of that, a golfer must steady their first tee jitters and focus on hitting a solid tee shot in front of the "gallery" of other players, coaches, and spectators. After hitting the tee shot, the fun doesn't end. The approach into the green is challenging, as trees surround the green as the hole narrows all the way into the hole.
+1 is a shorter par 5 with a daunting tee shot. There's OB on the left side, and trees and fescue along the right side. On top of that, a golfer must steady their first tee jitters and focus on hitting a solid tee shot in front of the "gallery" of other players, coaches, and spectators. After hitting the tee shot, the fun doesn't end. The approach into the green is challenging, as trees surround the green and the hole narrows all the way into the green
 
-Each of the four most difficult holes requires a well-struck tee shot. On the 12th, it's important to hit a long and straight shot. The 4th and 1st holes requires a precise tee shot, avoiding trouble and hitting a narrow fairway. The 7th requires a controlled tee shot that is shaped right to left.
+Each of the four most difficult holes requires a well-struck tee shot. On the 12th, it's important to hit a long and straight shot. The 4th and 1st holes require precision and steady nerves to avoid trouble and hit a narrow fairway. The 7th requires a controlled and well-executed tee shot that is shaped right to left.
 
 The next visualization is a [lollipop chart](http://datavizproject.com/data-type/lollipop-chart/), which is a great way to avoid the "visually aggressive" [moire effect](https://en.wikipedia.org/wiki/Moir%C3%A9_pattern) that bar charts can sometimes fall victim to without losing the perceptually sound concept of [position along a common scale](https://pdfs.semanticscholar.org/565d/843c2c0e60915709268ac4224894469d82d5.pdf). [Julia Silge](https://juliasilge.com) uses this chart type to great effect in some of her [blog posts](https://juliasilge.com/blog/gender-pronouns/).
 
@@ -235,7 +246,7 @@ tidy_scores %>%
 
 We took the same data that was displayed in the previous chart, but augmented it slightly to tell a different story. The orange lollipops on the chart show the holes that have higher scores relative to par than average. Three of the hardest four holes are on the front nine, occurring in the first seven holes of the course. We can also see how much more difficult holes 1, 4, 7, and 12 are than the rest (the "sticks" of the lollipops rise much higher than the other holes which played harder than average).
 
-We can also see the easiest holes on the course. Hole 11 stands out as being the easiest hole at PV. Hole 11 is a straightforward par 5 with almost no trouble off the tee and a fairly generous fairway all the way to the green. The hole also typically plays down wind (it's routed in the opposite direction of 12), allowing longer hitters the option of trying to reach it in two.
+We can also see the easiest holes on the course. Hole 11 stands out as being the easiest hole at PV. Hole 11 is a straightforward par 5 with almost no trouble off the tee and a fairly generous fairway all the way to the green. The hole also typically plays downwind (it's routed in the opposite direction of 12), allowing longer hitters the option of trying to reach it in two.
 
 
 ## Making the Turn: Statistical Modeling
@@ -254,11 +265,9 @@ hardest_holes <- c(12L, 4L, 7L, 1L, 18L,
 
 tidy_scores2 <- tidy_scores %>%
   mutate(tourn_year_f = factor(tourn_year),
-         hole_f = factor(hole,
-                         levels = hardest_holes))
+         hole_f = factor(hole,levels = hardest_holes))
 ## look at past performance to find most difficult holes
-simple_mod <- lmer(rel_to_par ~ hole_f + tourn_type +
-                     (1|tourn_year_f) + (1|tourn_year_f:name),
+simple_mod <- lmer(rel_to_par ~ hole_f+tourn_type+                     (1|tourn_year_f)+(1|tourn_year_f:name),
                    data = tidy_scores2)
 ```
 
@@ -274,7 +283,9 @@ Let's see what a summary of the model looks like
 summary(simple_mod)$coefficients
 ```
 
-Nothing too interesting going on here, except for the estimate for the `tourn_type` variable. _Directionally_, we got the result we were expecting, i.e. sectionals have lower scores relative to par than regionals on average. However, the coefficient is not significant (thumb rule $|t| < 2$)and its effect size is small, indicating that although the directional effect is negative, we'd have a hard time concluding that the effect is really that meaningful. 
+These results aren't too interesting, but note that I set up the `hole` factor variable to compare the other holes to #12, the hardest on the course. The only hole that wasn't significantly easier than 12 was #4. 
+
+We can also look at the estimate for the `tourn_type` variable. _Directionally_, we got the result we were expecting, i.e. sectionals have lower scores relative to par than regionals on average. However, the coefficient is not significant (thumb rule $|t| < 2$) and its effect size is small, indicating that although the directional effect is negative, we'd have a hard time concluding that the effect is really that meaningful. 
 
 Oh well, let's do something more interesting with the results from the model
 
@@ -343,13 +354,83 @@ As I'll mention in the conclusion of this post, I think we could dive a bit deep
 
 ## Walking up 18: What Separates the Best from the Rest
 
+Finally, we're going to take a look at what separates the golfers that broke 90 from the rest of the field. 
 
+To make the next visualization, we'll use a little bit of [`map_df`](https://purrr.tidyverse.org/reference/map.html) magic from the [__`purrr`__](https://purrr.tidyverse.org/) package to make a plot that is a cousin of the q-q plot.
+
+```{r}
+seq(0,1,.025) %>%
+  map_df(~untidy_scores %>% 
+           group_by(tourn_type, 'p' = .x) %>% 
+           summarise('perc' = quantile(tot, .x))) %>%
+  ggplot(aes(p, perc, colour = tourn_type))+
+  geom_point(size = 2)+
+  scale_x_continuous('Percentile (lower is better)', labels = percent)+
+  scale_y_continuous(breaks = seq(70, 160, 10),
+                     name = 'Final Score')+
+  scale_colour_brewer(palette = 'Set1',
+                      name = '')+
+  ggtitle('Final Score Percentile Plot by Tournament Type')
+```
+
+Breaking 90 is generally a sign of a fairly accomplished high school golfer. In the plot above, we can see that the 90 mark is right around the 30th percentile for both the regional and sectional tournaments. This means that about 30% of the competitors scored 90 or lower. One other interesting insight from this chart is that the performance between the regional and sectional tournament is fairly similar (the scores by percentile are pretty close) except for between the 50th and 75th percentiles. It could be interesting to dig into this divergence a bit more in a follow-up analysis.
+
+To explore the difference between those that broke 90 (`r percent(mean(untidy_scores$tot < 90))` of the field) from those that didn't, we'll fit a simple linear model. We'll use the results of the model to make predictions on a dummy data set and then look at the differences between predicted scores relative to par for each hole for the top 30% and the bottom 70%. We use a linear model to give our analysis a bit more precision than using simple averages across the data. We could also return to this analysis and investigate the coefficients or add complexity to the model if appropriate.
+
+```{r}
+tidy_scores3 <- tidy_scores2 %>%
+  mutate(broke_90 = ifelse(tot < 90, 'Broke 90', 'Did not Break 90'))
+# linear model with effects for hole, broke_90 indicator
+# and interaction between hole and broke_90
+fit2 <- lm(rel_to_par ~ hole_f * broke_90, data = tidy_scores3)
+
+dummy_table2 <- tidy_scores3 %>%
+  select(hole_f, broke_90) %>%
+  unique()
+
+dummy_preds <- cbind(dummy_table2,
+                     predict(fit2, 
+                             newdata = dummy_table2, 
+                             interval = 'prediction'))
+
+dummy_preds  %>%
+  select(hole_f, broke_90, fit) %>%
+  spread(broke_90, fit) %>%
+  mutate(diff_avg = `Did not Break 90` - `Broke 90`) %>%
+  ggplot(aes(reorder(hole_f, -diff_avg), diff_avg))+
+  geom_col()+
+  xlab('Hole (ordered by average difference)')+
+  ylab('Average Stroke Improvement from Bottom 70% to Top 30%')+
+  ggtitle('Where do the Better Golfers Shine?',
+          subtitle = paste0('The golfers finishing in the top 30% tended to',
+                            ' perform better on the more difficult holes.'))
+
+```
+
+The chart above demonstrates two clear reasons why the top 30% fared better than the rest:
+
+  1. They played the hardest holes better
+     - The top 30% were more than a stroke better than the bottom 70% on holes 1, 4, 7, and 12 
+  1. They took advantage of the easiest holes
+     - The top 30% were also more than a stroke better than the bottom 70% on hole 11 (the easiest hole on the course)
+
+The results from this quick analysis show that the better players __take advantage of the easiest holes__ and __minimize their mistakes on the hardest holes__.
 
 ## Signing the Scorecard: Final Thoughts and Summary
 
+In this blog post I talked about tidy data and also used data analysis to inform strategy decisions on the golf course. Of course, data science can be used to do more than just guide golfers to lower scores, but I thought it was an interesting application.
 
+The four toughest holes were 1, 4, 7, and 12. Each of these holes require thought off the tee, and some holes have challenging approach shots to the green. We saw that players who broke 90 tended to outperform their higher-scoring counterparts on these holes by more than a stroke.
 
+The easiest hole was number 11, a straightforward par 5 with little trouble, a generous fairway, and usually has a helping wind. This hole had the highest percentage of birdies on the course, and the top golfers took advantage of it. The top 30% played this hole more than a stroke better than the bottom 70%.
 
+It was difficult to identify clear differences between the results from regional and sectional tournaments, but we did see some divergence in final scores between the 50th through 75th percentiles. 
+
+We can use the results from this analysis to guide golfers' strategy a bit. First, they should take advantage of hole 11, as there is almost no risk to being aggressive on this hole. Second, they should think carefully and formulate a game plan for the tee shots on 1, 4, 7, and 12. These holes play as the most difficult, and a lot of the challenge comes from the tee shot. Finally, it's always a good idea to remember that you're playing golf, and that it's a game and it's supposed to be fun!
+
+In this blog post I used some data science techniques to explore an interesting data set. I think this analysis could be expanded to include more statistical modeling aided by some feature engineering (are there certain characteristics of holes we should investigate? what about player characteristics?). We could also dig deeper into the top 30% and try to determine differences _within_ that group, to find commonalities among the best of the best. Finally, it might be interesting to use data from a weather service to identify which years had difficult conditions, and estimate a rain or wind effect on final scores.
+
+Thanks for reading this post and feel free to leave a comment below if you have any thoughts or feedback!
 
 
 
