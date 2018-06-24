@@ -20,7 +20,6 @@ output:
   html_document: 
     toc: yes
     toc_depth: 4
-    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -43,19 +42,28 @@ Finally, I'll show how we can use [linear models](https://en.wikipedia.org/wiki/
 
 ## Some Useful Context
 
-This analysis will involve looking at results from WIAA golf tournaments that were hosted at [Pine Valley Golf Course (PV)](https://www.golfpinevalley.net/). Since 2011, either a regional or sectional tournament was played at PV for Division 3 high schools. 
+This analysis will involve looking at results from WIAA golf tournaments that were hosted at [Pine Valley Golf Course (PV)](https://www.golfpinevalley.net/). Since 2011, either a regional or sectional tournament was played at PV for Division 3 high schools. Pine Valley is a par 71 golf course, with two par 3's, six par 4's and one par 5 on the front nine, and two par 3's, five par 4's and two par 5's on the back nine. Here's an image of the scorecard:
+
+```{r, echo=FALSE}
+# Define variable containing url
+# https://stackoverflow.com/a/28915042/5619526
+url <- "https://photos.bluegolf.com/bd/10/80/e2/4bef45efb375fe1ae2739672_l.jpg"
+```
+
+<center><img src="`r url`"></center>
 
 Regional tournaments come before sectionals, with teams and individuals playing well in the regional tournament advancing to sectionals. Teams and individuals that play well in the sectional tournament will advance to the state tournament. It is a fair (and testable!) hypothesis that scores will tend to be better in sectional tournaments. 
 
 This analysis will involve looking at the results from these tournaments, and using the findings to potentially guide strategy on the golf course. 
 
-## Show me the data
+## Hitting the Range: Show me the data
 
 First I'm going to load a few packages. 
 
 ```{r message = FALSE, warning = FALSE}
 library(tidyverse)
 library(scales)
+library(lme4)
 theme_set(theme_bw())
 ```
 
@@ -68,15 +76,11 @@ I've already scraped the data and cleaned it up a bit. I've thrown the code and 
 
 ```{r}
 gh <- "https://raw.githubusercontent.com/bgstieber/files_for_blog/master/golf-tidy-data/data"
-
-# read in data and filter out any scores > 120
-
+# read in data and only keep scores lower than 120
 tidy_scores <- read_csv(paste0(gh, '/tidy_golf_scores.csv')) %>%
   filter(tot <= 120)
-
 untidy_scores <- read_csv(paste0(gh, '/untidy_golf_scores.csv')) %>%
   filter(tot <= 120)
-
 ```
 
 Let's take a peek at the first view rows of each data set. The first data set we'll look at is the untidy data, this is fairly close to what the WIAA provides on the webpages for each of the tournaments.
@@ -87,18 +91,265 @@ untidy_scores %>% head %>% datatable()
 
 Now let's take a look at the first few rows of the tidy data.
 
-```{r}
+```{r echo = FALSE}
 tidy_scores %>% head %>% datatable()
 ```
 
-## What makes data tidy?
+## Putting Practice: What makes data tidy?
 
-In some ways, this is one of those [I know it when I see it](https://en.wikipedia.org/wiki/I_know_it_when_I_see_it) things. We can follow the fairly solid guidelines [Hadley Wickham has proposed](https://www.jstatsoft.org/article/view/v059i10) (if you haven't read that paper, I __highly__ recommend it).
+In some ways, recognizing tidy/untidy data can be one of those [I know it when I see it](https://en.wikipedia.org/wiki/I_know_it_when_I_see_it) things. We can follow the fairly solid guidelines [Hadley Wickham has proposed](https://www.jstatsoft.org/article/view/v059i10) to make the distinction a bit more concrete (if you haven't read that paper, I __highly__ recommend it).
 
   - Each __variable__ is a column
   - Each __observation__ is a row
   - Each type of observational unit is a table (this isn't as important for this post)
   
-It's important to think about those two bolded words within the context of this analysis. We're interested in strategizing our way through a golf course, to hopefully play our best. Playing our best means minimizing mistakes _throughout_ a round of golf.
+It's important to think about those two bolded words within the context of this analysis. We're interested in strategizing our way through a golf course, to hopefully play our best. Playing our best means minimizing mistakes _throughout_ a round of golf. 
+
+Some people like to think of golf as a game composed of 18 "mini games" within it. For an analysis with the primary focus of identifying ways to get around the course as strategically as possible, I think the best way to look at the data is to have each observational unit be the score on __one hole__ for __each competitor__. Our tidy data set is constructed this way, with __one row per competitor per hole__. The untidy data has a structure of __one row per competitor__. This structure may be useful if we're only interested in looking at final scores for each competitor. It's also useful for a concise summary of a competitor's performance on a website (which was its original purpose).
+
+Transforming the data from untidy to tidy is fairly simple using the [`gather`](https://tidyr.tidyverse.org/reference/gather.html) function from the [__`tidyr`__](https://tidyr.tidyverse.org/) package.
+
+```{r}
+untidy_scores %>%
+  # only select a handful of columns to make printing easier
+  select(-year, -out, -`in`, -tot, -tourn_type, -tourn_year) %>%
+  gather(hole, score, -name)
+```
+
+Now that we have the data in a way that should be straightforward to analyze, let's start taking a look at some summaries of the results from these competitions.
+
+## Teeing Off: Exploring the Data
+
+We could either look at the scores on each hole or we could look at the score _relative to par_ for each hole. Scores will generally be higher depending on the par of the hole. Par 3's are shorter than par 4's which are shorter than par 5's, and the longer the hole the more strokes (usually) it will take to complete. Since this represents an inherent "bias" in the score data, I think it's better to analyze the score relative to par.
+
+First, we'll visualize the distribution of scores relative to par.
+
+```{r echo = FALSE}
+tidy_scores %>%
+  mutate(rel_to_par2 = 
+           ifelse(rel_to_par <= -1, "Birdie or Better",
+                  ifelse(rel_to_par == 0, "Par",
+                         ifelse(rel_to_par == 1, "Bogey", 
+                                "Double or Worse")))) %>%
+  mutate(rel_to_par2 = factor(rel_to_par2, 
+                              levels = c("Birdie or Better",
+                                         "Par", "Bogey",
+                                         "Double or Worse"))) %>%
+  count(hole, rel_to_par2) %>%
+  group_by(hole) %>%
+  mutate(perc_n = n / sum(n)) %>%
+  ggplot(aes(factor(hole, 18:1), rel_to_par2))+
+  geom_tile(aes(fill = n), colour = 'black')+
+  geom_text(aes(label = percent(perc_n)),
+            size = 5)+
+  coord_flip()+
+  scale_fill_distiller(palette = 'OrRd', direction = 1,
+                       name = 'Count')+
+  xlab('Hole')+
+  ylab('Score Relative to Par')+
+  ggtitle('Heatmap of Scores Relative to Par by Hole',
+          subtitle = paste0('Cells are colored according to count',
+                            ' of participants with that score for the hole.\n',
+                            'Percentages within each cell show the frequency of',
+                            'participants with that score for the hole.'))+
+  theme(panel.grid = element_blank())+
+  theme_minimal()
+```
+
+We're able to see a few things pretty quickly from the heatmap above:
+
+  - Holes 4 and 12 are clearly the hardest on the course, with over 50% of the field making double bogey or worse
+  - Hole 11 is the easiest on the course, with the highest percent of the field making a birdie or better, and the lowest percentage making double or worse.
+  - About 50% of the field made a bogey on 13, which is a par 3
+
+Next, we're going to take a look at the average score relative to par for each of the 18 holes played at PV.  
+
+```{r echo = FALSE}
+tidy_scores %>%
+  group_by(hole, par) %>%
+  summarise(avg_rel_to_par = mean(rel_to_par)) %>%
+  ggplot(aes(reorder(hole, avg_rel_to_par), avg_rel_to_par,
+             fill = factor(par)))+
+  geom_col(colour = 'black')+
+  geom_hline(aes(yintercept = mean(tidy_scores$rel_to_par)),
+             linetype = 'dashed', colour = 'blue', size = 1.2)+
+  coord_flip()+
+  xlab('Hole (ordered by difficulty)')+
+  ylab('Average Relative to Par')+
+  scale_fill_brewer(name = 'Par', palette = 'Greens')+
+  ggtitle('Average Score Relative to Par by Hole',
+          subtitle = 
+            paste0('Holes are ordered along the vertical axis by difficulty.\n',
+                   'Blue dashed line is the overall average score relative to',
+                   ' par for across all holes.'))
+```
+
+The four hardest holes are (in order of difficulty): 12, 4, 7, and 1.
+
+PV was my home course growing up, so here's a little _local knowledge_ about each of those holes.
+
+#### Hole 12
+
+12 is the longest par 4 on the course, playing at about 420 yards from the back tees. The tee shot can be intimidating with out-of-bounds along the left, and some trees and mounds on the right. This hole seemed to play into the wind more often than downwind, making it even longer than the 420 yards on the card.
+
+#### Hole 4
+
+4 is rated as the hardest hole on the golf course according to the USGA handicapping system. The tee shot can be somewhat difficult, with out-of-bounds, trees, and water on the left, and more trees on the right. That being said, the hole is not overly long, so hitting something less than driver is not a bad route. The green is guarded by a stream in front of it, and hilly terrain surrounding it.
+
+#### Hole 7
+
+7 is a short dogleg left. The main difficulty on this hole is the tight dogleg golfers must navigate off the tee. There are trees which can block an approach shot if the tee shot veers too far right, and hills along with trees and water on the left side for those getting too aggressive off the tee. The approach into the green (provided one has a clear shot) is not that difficult, with no bunkers and a lot of room to miss. The major difficulty on this hole is the tee shot, from there it's fairly straightforward.
+
+#### Hole 1
+
+1 is a shorter par 5 with a daunting tee shot. There's OB on the left side, and trees and fescue along the right side. On top of that, a golfer must steady their first tee jitters and focus on hitting a solid tee shot in front of the "gallery" of other players, coaches, and spectators. After hitting the tee shot, the fun doesn't end. The approach into the green is challenging, as trees surround the green as the hole narrows all the way into the hole.
+
+Each of the four most difficult holes requires a well-struck tee shot. On the 12th, it's important to hit a long and straight shot. The 4th and 1st holes requires a precise tee shot, avoiding trouble and hitting a narrow fairway. The 7th requires a controlled tee shot that is shaped right to left.
+
+The next visualization is a [lollipop chart](http://datavizproject.com/data-type/lollipop-chart/), which is a great way to avoid the "visually aggressive" [moire effect](https://en.wikipedia.org/wiki/Moir%C3%A9_pattern) that bar charts can sometimes fall victim to without losing the perceptually sound concept of [position along a common scale](https://pdfs.semanticscholar.org/565d/843c2c0e60915709268ac4224894469d82d5.pdf). [Julia Silge](https://juliasilge.com) uses this chart type to great effect in some of her [blog posts](https://juliasilge.com/blog/gender-pronouns/).
+
+```{r echo = FALSE}
+tidy_scores %>%
+  group_by(hole, par) %>%
+  summarise(avg_rel_to_par = mean(rel_to_par)) %>%
+  ungroup() %>%
+  mutate(tot_avg = mean(avg_rel_to_par),
+         diff_from_avg = avg_rel_to_par - tot_avg) %>%
+  mutate(diff_coded = ifelse(diff_from_avg < 0,
+                             'Easier than Average',
+                             'Harder than Average')) %>%
+  ggplot(aes(reorder(hole, diff_from_avg), diff_from_avg,
+             colour = diff_coded))+
+  geom_segment(aes(xend = reorder(hole, diff_from_avg), y = 0, yend = diff_from_avg),
+               size = 1.2)+
+  geom_point(size = 3)+
+  scale_color_brewer(palette = 'Set2', name = '')+
+  xlab('Hole (ordered by difficulty)')+
+  ylab('Difference in Score Relative to Par versus Average')+
+  ggtitle('Average Score on Hole Relative to Par Versus Overall Course Average',
+          subtitle = 
+            paste0('Holes with negative values are easier on average. ',
+                   'Holes with positive values are more difficult.'))
+
+```
+
+We took the same data that was displayed in the previous chart, but augmented it slightly to tell a different story. The orange lollipops on the chart show the holes that have higher scores relative to par than average. Three of the hardest four holes are on the front nine, occurring in the first seven holes of the course. We can also see how much more difficult holes 1, 4, 7, and 12 are than the rest (the "sticks" of the lollipops rise much higher than the other holes which played harder than average).
+
+We can also see the easiest holes on the course. Hole 11 stands out as being the easiest hole at PV. Hole 11 is a straightforward par 5 with almost no trouble off the tee and a fairly generous fairway all the way to the green. The hole also typically plays down wind (it's routed in the opposite direction of 12), allowing longer hitters the option of trying to reach it in two.
+
+
+## Making the Turn: Statistical Modeling
+
+After a bit of exploratory analysis, we can move on to using statistical modeling to briefly investigate the differences between holes with a little more precision. Additionally, we can use a simple model to test the hypothesis that scores (in relation to par) will be lower at sectional tournaments as opposed to regional.
+
+First, we'll fit a linear mixed-effects model. I haven't really worked with mixed-effects models too much since grad school, but this model shouldn't be too hard to describe.
+
+```{r}
+# create factor variables for tournament year and hole to make
+# modeling a bit easier
+hardest_holes <- c(12L, 4L, 7L, 1L, 18L, 
+                   15L, 10L, 3L, 13L, 
+                   17L, 6L, 2L, 16L, 
+                   8L, 14L, 9L, 5L, 11L)
+
+tidy_scores2 <- tidy_scores %>%
+  mutate(tourn_year_f = factor(tourn_year),
+         hole_f = factor(hole,
+                         levels = hardest_holes))
+## look at past performance to find most difficult holes
+simple_mod <- lmer(rel_to_par ~ hole_f + tourn_type +
+                     (1|tourn_year_f) + (1|tourn_year_f:name),
+                   data = tidy_scores2)
+```
+
+In the model above, we're fitting _fixed effects_ for the hole variable and the tournament type variable. Then, we're using `(1|tourn_year_f)` to fit a random effect for the tournament year, and using `(1|tourn_year_f:name)` to fit a random effect for the competitor _nested within_ tournament year. A simple way to think about the fixed versus random effects divide is that if we're interested in understanding the impact of a variable on our target, we should probably fit it as a fixed effect, if we're not that interested a random effect is the way to go (this is a gross over-simplification, I'd see [this post](https://dynamicecology.wordpress.com/2015/11/04/is-it-a-fixed-or-random-effect/) if you're looking for something more in-depth).
+
+Alright, so we fit the model, now what?
+
+### Check out the coefficients
+
+Let's see what a summary of the model looks like
+
+```{r}
+summary(simple_mod)$coefficients
+```
+
+Nothing too interesting going on here, except for the estimate for the `tourn_type` variable. _Directionally_, we got the result we were expecting, i.e. sectionals have lower scores relative to par than regionals on average. However, the coefficient is not significant (thumb rule $|t| < 2$)and its effect size is small, indicating that although the directional effect is negative, we'd have a hard time concluding that the effect is really that meaningful. 
+
+Oh well, let's do something more interesting with the results from the model
+
+### Pulling by our bootstraps
+
+What I really want is to be able to visualize not only the difficulty of the holes (i.e. a point estimate), but also look at the uncertainty in that difficulty.
+
+Using the solution from this [CrossValidated post](https://stats.stackexchange.com/a/147837/99673), we'll use the bootstrap to generate predictions on a "dummy" data set.
+
+```{r cache = TRUE}
+# initial setup
+dummy_table <- tidy_scores2 %>%
+  select(hole_f, tourn_type) %>%
+  unique()
+
+# taken from https://stats.stackexchange.com/a/147837/99673
+predFun <- function(fit) {
+  predict(fit, dummy_table, re.form = NA)
+}
+# fit the bootstrap...takes a longish time
+bb <- bootMer(simple_mod,
+              nsim = 500,
+              FUN = predFun,
+              seed = 101)
+```
+
+After munging the data a bit, we're left with a data set of predictions from the bootstrap.
+
+```{r}
+# use the results from the boostrapped model
+dummy_table_boot <- cbind(dummy_table, t(bb$t)) %>%
+  gather(iter, rel_to_par, -hole_f, -tourn_type) %>%
+  mutate(hole_n = as.numeric(as.character(hole_f)))
+
+dummy_table_boot %>% head
+```
+
+We can use these results to visualize the distributions of predictions.
+
+```{r echo = FALSE, fig.width = 8}
+ggplot(dummy_table_boot, 
+       aes(reorder(hole_n, -rel_to_par), rel_to_par, fill = tourn_type))+
+  geom_hline(data = dummy_table_boot %>%
+               group_by(tourn_type) %>%
+               summarise(rel_to_par = mean(rel_to_par)),
+             aes(yintercept = rel_to_par,
+                 colour = tourn_type),
+             size = 1.2,
+             linetype = 'dashed')+
+  geom_boxplot(outlier.shape = NA)+
+  facet_wrap(~tourn_type)+
+  scale_fill_brewer(palette = 'Set1', name = '')+
+  scale_colour_brewer(palette = 'Set1', name = '')+
+  xlab('Hole (ordered by difficulty)')+
+  ylab('Score Relative to Par')+
+  ggtitle(paste0('Bootstrapped Predictions of Score Relative to Par',
+                 ' by Hole and Tournament Type'),
+          subtitle = paste0('Thick dashed lines show overall',
+                            ' average of score relative to par' ,
+                            ' for each tournament type.'))
+```
+
+We see that for both regional and sectional tournaments, holes 1, 4, 7, and 12 were much more difficult than the rest. We can also see that scores relative to par were slightly higher for regional tournaments, and that scores tended to vary a bit more in regional tournaments (the boxes for regionals tend to be a bit longer). 
+
+As I'll mention in the conclusion of this post, I think we could dive a bit deeper into the mixed-effects models and potentially investigate interaction effects, or build some more interesting models using feature engineering, but this is as far as I want to go for this post.
+
+## Walking up 18: What Separates the Best from the Rest
+
+
+
+## Signing the Scorecard: Final Thoughts and Summary
+
+
+
+
+
 
 

@@ -94,10 +94,15 @@ tidy_scores %>%
             paste0('Holes with negative values are, on average easier. ',
                    'Holes with positive values are more difficult.'))
 
+hardest_holes <- c(12L, 4L, 7L, 1L, 18L, 
+                   15L, 10L, 3L, 13L, 
+                   17L, 6L, 2L, 16L, 
+                   8L, 14L, 9L, 5L, 11L)
+
 tidy_scores2 <- tidy_scores %>%
   mutate(tourn_year_f = factor(tourn_year),
          hole_f = factor(hole,
-                         levels = c(12, 1:11, 13:18)))
+                         levels = hardest_holes))
 ## look at past performance to find most difficult holes
 simple_mod <- lmer(rel_to_par ~ hole_f + tourn_type +
                      (1|tourn_year_f) + (1|tourn_year_f:name),
