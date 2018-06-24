@@ -23,11 +23,33 @@ output:
     code_folding: hide
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE,
+                      error = FALSE)
+```
+
 ## Introduction
 
-I'm going to use this post to discuss some of the aspects of data science that interest me most (using data to guide strategy and tidy data). First, I'm going to look at acquiring data from a webpage. In my opinion, this data isn't in a tidy format, and needs to be reshaped a bit. Once we get the data into a tidy form, we can 
+I'm going to use this post to discuss some of the aspects of data science that interest me most (tidy data as well as using data to guide strategy). 
 
-## Getting the data
+I'm going to take a little bit of time to talk about [__tidy data__](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html). When I scraped the data used for this analysis, it wasn't really stored in a tidy format, and there's a good reason for that. I'll briefly discuss what makes the original data "untidy", and what we can do to whip it into tidy shape.
+
+After that, I'll explore the data a little bit, with the goal of using the findings from this analysis to 
+
+  1. improve strategy on the golf course
+  2. inspire ideas for looking deeper at the data
+  
+Finally, I'll show how we can use [linear models](https://en.wikipedia.org/wiki/Linear_model) along with [mixed effect linear models](https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf) to build statistical models which allow us to quantify differences between groups.
+
+## Some Useful Context
+
+This analysis will involve looking at results from WIAA golf tournaments that were hosted at [Pine Valley Golf Course (PV)](https://www.golfpinevalley.net/). Since 2011, either a regional or sectional tournament was played at PV for Division 3 high schools. 
+
+Regional tournaments come before sectionals, with teams and individuals playing well in the regional tournament advancing to sectionals. Teams and individuals that play well in the sectional tournament will advance to the state tournament. It is a fair (and testable!) hypothesis that scores will tend to be better in sectional tournaments. 
+
+This analysis will involve looking at the results from these tournaments, and using the findings to potentially guide strategy on the golf course. 
+
+## Show me the data
 
 First I'm going to load a few packages. 
 
@@ -37,13 +59,46 @@ library(scales)
 theme_set(theme_bw())
 ```
 
+```{r echo = FALSE, warning=FALSE, message=FALSE}
+library(DT)
+```
+
+
 I've already scraped the data and cleaned it up a bit. I've thrown the code and data in a [github repository](https://github.com/bgstieber/files_for_blog/tree/master/golf-tidy-data). 
 
 ```{r}
-gh <- "https://github.com/bgstieber/files_for_blog/tree/master/golf-tidy-data"
+gh <- "https://raw.githubusercontent.com/bgstieber/files_for_blog/master/golf-tidy-data/data"
 
-tidy_scores <- read_csv
+# read in data and filter out any scores > 120
 
+tidy_scores <- read_csv(paste0(gh, '/tidy_golf_scores.csv')) %>%
+  filter(tot <= 120)
+
+untidy_scores <- read_csv(paste0(gh, '/untidy_golf_scores.csv')) %>%
+  filter(tot <= 120)
 
 ```
+
+Let's take a peek at the first view rows of each data set. The first data set we'll look at is the untidy data, this is fairly close to what the WIAA provides on the webpages for each of the tournaments.
+
+```{r echo = FALSE}
+untidy_scores %>% head %>% datatable()
+```
+
+Now let's take a look at the first few rows of the tidy data.
+
+```{r}
+tidy_scores %>% head %>% datatable()
+```
+
+## What makes data tidy?
+
+In some ways, this is one of those [I know it when I see it](https://en.wikipedia.org/wiki/I_know_it_when_I_see_it) things. We can follow the fairly solid guidelines [Hadley Wickham has proposed](https://www.jstatsoft.org/article/view/v059i10) (if you haven't read that paper, I __highly__ recommend it).
+
+  - Each __variable__ is a column
+  - Each __observation__ is a row
+  - Each type of observational unit is a table (this isn't as important for this post)
+  
+It's important to think about those two bolded words within the context of this analysis. We're interested in strategizing our way through a golf course, to hopefully play our best. Playing our best means minimizing mistakes _throughout_ a round of golf.
+
 
