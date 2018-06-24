@@ -12,19 +12,87 @@ untidy_scores <- read_csv(paste0(gh, '/untidy_golf_scores.csv')) %>%
   filter(tot <= 120)
 
 head(tidy_scores)
-# hardest hole?
+
+# plot1: count of scores by hole
+
+tidy_scores %>%
+  mutate(rel_to_par2 = 
+           ifelse(rel_to_par <= -1, "Birdie or Better",
+                  ifelse(rel_to_par == 0, "Par",
+                         ifelse(rel_to_par == 1, "Bogey", 
+                                "Double or Worse")))) %>%
+  mutate(rel_to_par2 = factor(rel_to_par2, 
+                              levels = c("Birdie or Better",
+                                         "Par", "Bogey",
+                                         "Double or Worse"))) %>%
+  count(hole, rel_to_par2) %>%
+  group_by(hole) %>%
+  mutate(perc_n = n / sum(n)) %>%
+  ggplot(aes(factor(hole, 18:1), rel_to_par2))+
+  geom_tile(aes(fill = n), colour = 'black')+
+  geom_text(aes(label = percent(perc_n)),
+            size = 5)+
+  coord_flip()+
+  scale_fill_distiller(palette = 'OrRd', direction = 1,
+                       name = 'Count')+
+  xlab('Hole')+
+  ylab('Score Relative to Par')+
+  ggtitle('Heatmap of Scores Relative to Par by Hole',
+          subtitle = paste0('Cells are colored according to count',
+                            ' of participants with that score for the hole.\n',
+                            'Percentages within each cell show the frequency of',
+                            'participants with that score for the hole.'))+
+  theme(panel.grid = element_blank())+
+  theme_minimal()
+
+
+# plot2: hardest hole?
 tidy_scores %>%
   group_by(hole, par) %>%
   summarise(avg_rel_to_par = mean(rel_to_par)) %>%
   ggplot(aes(reorder(hole, avg_rel_to_par), avg_rel_to_par,
              fill = factor(par)))+
   geom_col(colour = 'black')+
-  geom_hline(aes(yintercept = mean(tidy_scores$rel_to_par)))+
+  geom_hline(aes(yintercept = mean(tidy_scores$rel_to_par)),
+             linetype = 'dashed', colour = 'blue', size = 1.2)+
   coord_flip()+
   xlab('Hole (ordered by difficulty)')+
   ylab('Average Relative to Par')+
-  scale_fill_brewer(name = 'Par')
+  scale_fill_brewer(name = 'Par', palette = 'Greens')+
+  ggtitle('Average Score Relative to Par by Hole',
+          subtitle = 
+            paste0('Holes are ordered along the vertical axis by difficulty.\n',
+                   'Blue dashed line is the overall average score relative to',
+                   ' par for across all holes.'))
 
+
+# plot3: another way to look at hardest hole
+# lollipop chart in style of julia silge
+# https://juliasilge.com/blog/gender-pronouns/
+# plot3: another way to look at hardest hole
+# lollipop chart in style of julia silge
+# https://juliasilge.com/blog/gender-pronouns/
+tidy_scores %>%
+  group_by(hole, par) %>%
+  summarise(avg_rel_to_par = mean(rel_to_par)) %>%
+  ungroup() %>%
+  mutate(tot_avg = mean(avg_rel_to_par),
+         diff_from_avg = avg_rel_to_par - tot_avg) %>%
+  mutate(diff_coded = ifelse(diff_from_avg < 0,
+                             'Easier than Average',
+                             'Harder than Average')) %>%
+  ggplot(aes(reorder(hole, diff_from_avg), diff_from_avg,
+             colour = diff_coded))+
+  geom_segment(aes(xend = reorder(hole, diff_from_avg), y = 0, yend = diff_from_avg),
+               size = 1.2)+
+  geom_point(size = 3)+
+  scale_color_brewer(palette = 'Set2', name = '')+
+  xlab('Hole (ordered by difficulty)')+
+  ylab('Difference in Score Relative to Par versus Average')+
+  ggtitle('Average Score on Hole Relative to Par Versus Overall Course Average',
+          subtitle = 
+            paste0('Holes with negative values are, on average easier. ',
+                   'Holes with positive values are more difficult.'))
 
 tidy_scores2 <- tidy_scores %>%
   mutate(tourn_year_f = factor(tourn_year),
@@ -65,6 +133,8 @@ ggplot(dummy_table_boot,
   coord_flip()+
   facet_wrap(~tourn_type)
 
+# plot4, estimated difficult for each hole by tournament type
+# getting a little more precise about quantifying difficulty
 ggplot(dummy_table_boot, 
        aes(reorder(hole_n, -rel_to_par), rel_to_par, fill = tourn_type))+
   geom_hline(data = dummy_table_boot %>%
@@ -82,6 +152,8 @@ ggplot(dummy_table_boot,
   ylab('Score Relative to Par')
 
 ## what separates the top X% from the rest?
+## plot5
+## kind of a simplified qq plot
 seq(0,1,.025) %>%
   map_df(~untidy_scores %>% 
            group_by(tourn_type, 'p' = .x) %>% 
@@ -114,11 +186,22 @@ dummy_preds %>%
   geom_pointrange(position = position_dodge(width = 1))+
   coord_flip()
 
+# plot 6 where do the top performers perform better than the worst
 dummy_preds  %>%
   select(hole_f, broke_90, fit) %>%
   spread(broke_90, fit) %>%
-  mutate(diff_avg = `Broke 90` - `Did not Break 90`) %>%
-  ggplot(aes(reorder(hole_f, diff_avg), diff_avg))+
-  geom_point()+
-  coord_flip()
+  mutate(diff_avg = `Did not Break 90` - `Broke 90`) %>%
+  ggplot(aes(reorder(hole_f, -diff_avg), diff_avg))+
+  geom_col()+
+  xlab('Hole (ordered by average difference)')+
+  ylab('Average Stroke Improvement from Top 30% to Bottom 70%')+
+  ggtitle('Where do the Better Golfers Shine?',
+          subtitle = paste0('The golfers finishing in the top 30% tended to',
+                            ' perform better on the more difficult holes.'))
 
+tidy_scores %>%
+  arrange(name) %>%
+  group_by(name) %>%
+  ggplot(aes(hole, rel_to_par, colour = factor(tourn_year)))+
+  stat_summary(position = position_dodge(width = 1))+
+  facet_wrap(~tourn_year)
