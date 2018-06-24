@@ -26,7 +26,7 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE,
 
 ## Introduction
 
-I'm going to use this post to discuss some of the aspects of data science that interest me most (tidy data as well as using data to guide strategy). I'm going to discuss these topics through the lens of a data analysis of results from a few high school golf tournaments. 
+I'm going to use this post to discuss some of the aspects of data science that interest me most (tidy data as well as using data to guide strategy). I'll be discussing these topics through the lens of a data analysis of results from a few high school golf tournaments. 
 
 I'm going to take a little bit of time to talk about [__tidy data__](https://cran.r-project.org/web/packages/tidyr/vignettes/tidy-data.html). When I scraped the data used for this analysis, it wasn't really stored in a tidy format, and there's a good reason for that. I'll briefly discuss what makes the original data "untidy", and what we can do to whip it into tidy shape.
 
@@ -35,9 +35,9 @@ After that, I'll explore the data a little bit, with the goal of using the findi
   1. improve strategy on the golf course
   2. inspire ideas for looking deeper at the data
   
-Finally, I'll show how we can use [linear models](https://en.wikipedia.org/wiki/Linear_model) along with [mixed effect linear models](https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf) to build statistical models which allow us to quantify differences between groups of interest.
+Finally, I'll show how we can use [linear models](https://en.wikipedia.org/wiki/Linear_model) along with [mixed-effects linear models](https://cran.r-project.org/web/packages/lme4/vignettes/lmer.pdf) to build statistical models which allow us to quantify differences between groups of interest.
 
-Here are the questions I hope to answer using data along with some domain knowledge I've built around golf:
+Here are the questions I hope to answer using the data:
 
   - What are the most difficult holes? Why are they difficult?
   - What is the easiest hole? What makes it easier than the rest?
@@ -45,7 +45,7 @@ Here are the questions I hope to answer using data along with some domain knowle
   - What separates the better high school golfers (those that break 90) from the other golfers?
   - What are some general strategy guidelines for playing this golf course?
 
-All of the analysis in this post was performed using `R`. I've omitted some of the code used to generate plots to improve readability, the full .Rmd file can be found [on my GitHub]().
+All of the analysis in this post was performed using `R`. I've omitted some of the code used to generate plots to improve readability. The full .Rmd file can be found [on my GitHub](https://github.com/bgstieber/files_for_blog/blob/master/golf-tidy-data/2018-05-27-golf-tidy-data-and-using-data-analysis-for-strategy.Rmd).
 
 ## Some Useful Context
 
@@ -84,16 +84,16 @@ I've already scraped the data and cleaned it up a bit. I've thrown the code and 
 
 ```{r}
 gh <- "https://raw.githubusercontent.com/bgstieber/files_for_blog/master/golf-tidy-data/data"
-# read in data and only keep scores lower than 120
+# read in data and only keep scores lower than 121
 tidy_scores <- read_csv(paste0(gh, '/tidy_golf_scores.csv')) %>%
   filter(tot <= 120)
 untidy_scores <- read_csv(paste0(gh, '/untidy_golf_scores.csv')) %>%
   filter(tot <= 120)
 ```
 
-In total, the data is comprised of `r nrow(untidy_scores)` golfers with scores for each of the 18 holes they played. In total, there are `r nrow(tidy_scores)` scores in this data set. 
+The data is comprised of `r nrow(untidy_scores)` golfers with scores for each of the 18 holes they played. In total, there are `r nrow(tidy_scores)` scores in this data set. 
 
-Let's take a peek at the first view rows of each data set. The first data set we'll look at is the untidy data, this is fairly close to what the WIAA provides on the webpages for each of the tournaments.
+Let's take a peek at the first few rows of each data set. The first data set we'll look at is the untidy data, this is fairly close to what the WIAA provides on the webpages for each of the tournaments.
 
 ```{r echo = FALSE}
 untidy_scores %>% head %>% datatable()
@@ -105,6 +105,8 @@ Now let's take a look at the first few rows of the tidy data.
 ```{r echo = FALSE}
 tidy_scores %>% head %>% datatable()
 ```
+
+On inspection, there are some clear differences between the tidy and untidy data sets.
 
 ## Putting Practice: What makes data tidy?
 
@@ -244,9 +246,9 @@ tidy_scores %>%
 
 ```
 
-We took the same data that was displayed in the previous chart, but augmented it slightly to tell a different story. The orange lollipops on the chart show the holes that have higher scores relative to par than average. Three of the hardest four holes are on the front nine, occurring in the first seven holes of the course. We can also see how much more difficult holes 1, 4, 7, and 12 are than the rest (the "sticks" of the lollipops rise much higher than the other holes which played harder than average).
+We took the same data that was displayed in the previous chart, but augmented it slightly to tell a different story. The orange lollipops on the chart show the holes that have higher scores relative to par than average. Three of the four hardest holes are on the front nine, occurring in the first seven holes of the course. We can also see how much more difficult holes 1, 4, 7, and 12 are than the rest (the "sticks" of the lollipops rise much higher than the other holes which played harder than average).
 
-We can also see the easiest holes on the course. Hole 11 stands out as being the easiest hole at PV. Hole 11 is a straightforward par 5 with almost no trouble off the tee and a fairly generous fairway all the way to the green. The hole also typically plays downwind (it's routed in the opposite direction of 12), allowing longer hitters the option of trying to reach it in two.
+The easiest holes on the course can be identified as well. Hole 11 stands out as being the easiest hole at PV. Hole 11 is a straightforward par 5 with almost no trouble off the tee and a fairly generous fairway all the way to the green. The hole typically plays downwind (it's routed in the opposite direction of 12), allowing longer hitters the option of trying to reach it in two.
 
 
 ## Making the Turn: Statistical Modeling
@@ -267,11 +269,11 @@ tidy_scores2 <- tidy_scores %>%
   mutate(tourn_year_f = factor(tourn_year),
          hole_f = factor(hole,levels = hardest_holes))
 ## look at past performance to find most difficult holes
-simple_mod <- lmer(rel_to_par ~ hole_f+tourn_type+                     (1|tourn_year_f)+(1|tourn_year_f:name),
+simple_mod <- lmer(rel_to_par ~ hole_f+tourn_type+(1|tourn_year_f)+(1|tourn_year_f:name),
                    data = tidy_scores2)
 ```
 
-In the model above, we're fitting _fixed effects_ for the hole variable and the tournament type variable. Then, we're using `(1|tourn_year_f)` to fit a random effect for the tournament year, and using `(1|tourn_year_f:name)` to fit a random effect for the competitor _nested within_ tournament year. A simple way to think about the fixed versus random effects divide is that if we're interested in understanding the impact of a variable on our target, we should probably fit it as a fixed effect, if we're not that interested a random effect is the way to go (this is a gross over-simplification, I'd see [this post](https://dynamicecology.wordpress.com/2015/11/04/is-it-a-fixed-or-random-effect/) if you're looking for something more in-depth).
+In the model above, we're fitting _fixed effects_ for the hole variable and the tournament type variable. We're using `(1|tourn_year_f)` to fit a random effect for the tournament year, and using `(1|tourn_year_f:name)` to fit a random effect for the competitor _nested within_ tournament year. A simple way to think about the fixed versus random effects divide is that if we're interested in understanding the impact of a variable on our target, we should probably fit it as a fixed effect, if we're not that interested a random effect is the way to go (this is a gross over-simplification, I'd see [this post](https://dynamicecology.wordpress.com/2015/11/04/is-it-a-fixed-or-random-effect/) if you're looking for something more in-depth).
 
 Alright, so we fit the model, now what?
 
@@ -340,7 +342,7 @@ ggplot(dummy_table_boot,
   scale_fill_brewer(palette = 'Set1', name = '')+
   scale_colour_brewer(palette = 'Set1', name = '')+
   xlab('Hole (ordered by difficulty)')+
-  ylab('Score Relative to Par')+
+  ylab('Predicted Score Relative to Par')+
   ggtitle(paste0('Bootstrapped Predictions of Score Relative to Par',
                  ' by Hole and Tournament Type'),
           subtitle = paste0('Thick dashed lines show overall',
@@ -373,7 +375,7 @@ seq(0,1,.025) %>%
   ggtitle('Final Score Percentile Plot by Tournament Type')
 ```
 
-Breaking 90 is generally a sign of a fairly accomplished high school golfer. In the plot above, we can see that the 90 mark is right around the 30th percentile for both the regional and sectional tournaments. This means that about 30% of the competitors scored 90 or lower. One other interesting insight from this chart is that the performance between the regional and sectional tournament is fairly similar (the scores by percentile are pretty close) except for between the 50th and 75th percentiles. It could be interesting to dig into this divergence a bit more in a follow-up analysis.
+Breaking 90 is generally a sign of a fairly accomplished high school golfer. In the plot above, we can see that the 90 mark is right around the 30th percentile for both the regional and sectional tournaments. This means that about 30% of the competitors scored 90 or lower. One other interesting insight from this chart is that the performance between the regional and sectional tournament is fairly similar (the scores by percentile are pretty close) except for between the 50th and 75th percentiles (the red dots tend to rise a bit above the blue). It could be interesting to dig into this divergence a bit more in a follow-up analysis.
 
 To explore the difference between those that broke 90 (`r percent(mean(untidy_scores$tot < 90))` of the field) from those that didn't, we'll fit a simple linear model. We'll use the results of the model to make predictions on a dummy data set and then look at the differences between predicted scores relative to par for each hole for the top 30% and the bottom 70%. We use a linear model to give our analysis a bit more precision than using simple averages across the data. We could also return to this analysis and investigate the coefficients or add complexity to the model if appropriate.
 
@@ -388,12 +390,8 @@ dummy_table2 <- tidy_scores3 %>%
   select(hole_f, broke_90) %>%
   unique()
 
-dummy_preds <- cbind(dummy_table2,
-                     predict(fit2, 
-                             newdata = dummy_table2, 
-                             interval = 'prediction'))
-
-dummy_preds  %>%
+cbind(dummy_table2, 
+      predict(fit2, newdata = dummy_table2, interval = 'prediction')) %>%
   select(hole_f, broke_90, fit) %>%
   spread(broke_90, fit) %>%
   mutate(diff_avg = `Did not Break 90` - `Broke 90`) %>%
@@ -418,7 +416,7 @@ The results from this quick analysis show that the better players __take advanta
 
 ## Signing the Scorecard: Final Thoughts and Summary
 
-In this blog post I talked about tidy data and also used data analysis to inform strategy decisions on the golf course. Of course, data science can be used to do more than just guide golfers to lower scores, but I thought it was an interesting application.
+In this blog post I talked about tidy data and used data analysis to inform decisions on the golf course. Of course, data science can be used to do more than just guide golfers to lower scores, but I thought it was an interesting application.
 
 The four toughest holes were 1, 4, 7, and 12. Each of these holes require thought off the tee, and some holes have challenging approach shots to the green. We saw that players who broke 90 tended to outperform their higher-scoring counterparts on these holes by more than a stroke.
 
