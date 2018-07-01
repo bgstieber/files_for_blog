@@ -100,4 +100,15 @@ albums_and_numeric
   geom_tile(colour = 'black')+
   scale_fill_gradient2(low = muted('blue'), high = muted('red'))
 
+# use NbClust package to suggest # of clusters
+library(NbClust)
+kmeans_dawes <- NbClust(data = dawes_numeric_log_scaled, method = 'kmeans')
+
+# try 3 clusters
+km_3 <- kmeans(dawes_numeric_log_scaled,
+               centers = 3,
+               iter.max = 100,
+               nstart = 20)
+
+
 
