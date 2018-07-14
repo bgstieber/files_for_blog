@@ -5,9 +5,24 @@ date: "July 13, 2018"
 output: html_document
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE,
+                      error = FALSE)
+```
+
+
 # Introduction
 
 In this post, I'm going to make the claim that the machine learning process can be explained by using the analogy of making a soup. Relying on some insight from the [CRISP-DM framework](), my own experience as an amateur chef, and the well-known [iris data set](), I'm going to try to convince you that the soup and machine learning connection is a pretty decent first approximation you could use while explaining the machine learning process.
+
+This post is pretty light on code, with just a little bit of it at the end for illustrative purposes. These are the packages we'll need.
+
+```{r}
+library(tidyverse)
+library(glmnet)
+library(caret)
+```
+
 
 # Some Background
 
@@ -65,15 +80,14 @@ I'm going to use the iris dataset and try to predict whether a flower is from th
 Here's a quick look at the data
 
 ```{r echo = FALSE}
-head(iris)
+knitr::kable(head(iris[sample(nrow(iris), 6), ]), row.names = FALSE)
 ```
 
 ```{r echo = FALSE}
 iris_colors <- RColorBrewer::brewer.pal(3, 'Set1')[iris$Species]
 
 
-pairs(iris[, 1:4], col = iris_colors, oma=c(3,3,3,15),
-      main = 'The Famous Iris Data')
+pairs(iris[, 1:4], col = iris_colors, oma=c(3,3,3,15))
 par(xpd = TRUE)
 legend("bottomright", 
        fill = unique(iris_colors), 
@@ -89,6 +103,40 @@ What type of model?
 ## Ingredients
 
 Variable selection and feature engineering
+
+
+```{r}
+# create training and testing split
+training_index <- sample(nrow(iris), 0.7 * nrow(iris))
+iris_train <- iris[training_index,]
+iris_test <- iris[-training_index,]
+# grab X data add squared term for each column
+iris_X_train <- iris_train[,-5] %>%
+  mutate_all(funs('sq' = . ^ 2))
+
+iris_X_test <- iris_test[,-5] %>%
+  mutate_all(funs('sq' = . ^ 2))
+
+# all two way interactions with first order terms
+iris_X_train <- model.matrix( ~ -1 + . + 
+                                (Sepal.Length + Sepal.Width +
+                                   Petal.Length + Petal.Width) ^ 2,
+                              data = iris_X_train)
+
+iris_X_test <- model.matrix( ~ -1 + . + 
+                                (Sepal.Length + Sepal.Width +
+                                   Petal.Length + Petal.Width) ^ 2,
+                              data = iris_X_test)
+
+# fit center and scale processor on training data
+preProc <- preProcess(iris_X_train)
+iris_X_train_cs <- predict(preProc, iris_X_train)
+iris_X_test_cs <- predict(preProc, iris_X_test)
+# labels, convert to factor for glmnet
+iris_y_train <- as.factor(as.numeric(iris_train$Species == 'setosa'))
+iris_y_test <- as.factor(iris_test$Species == 'setosa')
+```
+
 
 ## Cooking Methods
 
