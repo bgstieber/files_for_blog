@@ -1,0 +1,118 @@
+---
+title: "Everything I Know About Machine Learning I Learned from Making Soup"
+author: "Brad Stieber"
+date: "July 13, 2018"
+output: html_document
+---
+
+# Introduction
+
+In this post, I'm going to make the claim that the machine learning process can be explained by using the analogy of making a soup. Relying on some insight from the [CRISP-DM framework](), my own experience as an amateur chef, and the well-known [iris data set](), I'm going to try to convince you that the soup and machine learning connection is a pretty decent first approximation you could use while explaining the machine learning process.
+
+# Some Background
+
+I recently gave a presentation on the CRISP-DM framework to the various teams that make up the IT Department at my organization. While I was discussing the Modeling phase of the CRISP-DM framework, I got some questions that come up fairly often when you talk about data science with a fairly technical audience.
+
+_When you're building a model, what are you doing? Where are you spending your time? How long does that take?_
+
+The people in IT know that data, machine learning, and artificial intelligence are impacting our daily lives, from [chat bots]() to [spam email detection]() to the [curation of news feeds](). While they have tremendous awareness of the _impact_ of data science (along with sophisticated knowledge of servers and frameworks), they may not have as much awareness of the _processes_ of data science.
+
+I thought I did a fairly good job of breaking down the three components of machine learning and the typical amount of iteration within each component by mirroring the CRISP-DM breakdown:
+
+  - Problem type and associated modeling technique
+      - Iteration level: low
+  - Parameter tuning
+      - Iteration level: high
+  - Feature engineering and selection
+      - Iteration level: high
+  
+Of course, I was in a room full of people, trying to extemporaneously explain parameter tuning and feature engineering in a coherent way, so I probably could have done a better job.
+
+A few minutes after the meeting, I realized I could have used a very simple analogy to explain the machine learning process.
+
+__Machine learning is like making a soup. First, you pick the type of soup you want to make. Second, you figure out what types of ingredients are going to be in the soup and how these ingredients are going to be prepped. Third, you determine how you're going to cook the soup. Finally, you taste the soup and iterate to hopefully make it taste better.__
+
+
+# Making a Soup = Machine Learning
+
+While I'm certainly not an expert chef, I think you can boil down making a soup into a few simple components.
+
+
+## Picking the Soup = Selecting a Modeling Technique
+
+__Soup Making:__ what type of soup are we trying to make? are there external characteristics (season, weather, mood) we should consider? what soup will we enjoy? how difficult is this soup to make?
+
+__Machine Learning:__ what type of question are we trying to answer? what type of model will allow us to use data to answer this question? how is this model implemented? what are its assumptions?
+
+## Ingredients = Feature Engineering & Selection
+
+__Soup Making:__ what vegetables are needed and how should they be prepped? what type of protein will we be using? is the soup butter-based, cream-based or something else?
+
+__Machine Learning:__ what variables are needed for this model? do we need to standardize any of the variables? are there non-numeric variables? if so, how should those be handled?
+
+## Cooking Methods = Parameter Tuning
+
+__Soup Making:__ what heat are we cooking at and for how long? is the pot covered or uncovered? will the pot be on the stovetop for the entirety of cooking or will we move it to the oven? how long will we let the soup simmer? how big of a batch are we making?
+
+__Machine Learning:__ what is our loss function? is there a learning rate? what's the k in our k-fold cross validation? how many trees in our random forest? how much should we penalize complexity? what is the training/validation split?
+
+# Building a Model
+
+Let's see this framework in action. I'm going to pick a fairly simple classification task to demonstrate.
+
+I'm going to use the iris dataset and try to predict whether a flower is from the setosa species.
+
+Here's a quick look at the data
+
+```{r echo = FALSE}
+head(iris)
+```
+
+```{r echo = FALSE}
+iris_colors <- RColorBrewer::brewer.pal(3, 'Set1')[iris$Species]
+
+
+pairs(iris[, 1:4], col = iris_colors, oma=c(3,3,3,15),
+      main = 'The Famous Iris Data')
+par(xpd = TRUE)
+legend("bottomright", 
+       fill = unique(iris_colors), 
+       legend = c(levels(iris$Species)))
+```
+
+The iris data is used as a "hello, world" in data science. It has nice applications across a broad spectrum of applications: [clustering](https://cran.r-project.org/web/packages/dendextend/vignettes/Cluster_Analysis.html), [regression](https://warwick.ac.uk/fac/sci/moac/people/students/peter_cock/r/iris_lm/), [classification](http://michael.hahsler.net/SMU/EMIS7332/R/logistic_regression.html), and [visualization](https://bl.ocks.org/mbostock/4063663). It's worth getting [excited](https://eagereyes.org/blog/2018/how-to-get-excited-about-standard-datasets) about!
+
+## Picking the Soup
+
+What type of model?
+
+## Ingredients
+
+Variable selection and feature engineering
+
+## Cooking Methods
+
+Parameter tuning
+
+# Wrapping Up
+
+When we compare making a soup to machine learning, we get a fairly simple and understandable lens through which we can look at machine learning. Just like making soup or cooking in general, iteration is a key component of machine learning. If you ask anyone that's trying to develop a recipe, they probably won't get it right the first time. If they do get it right the first time, maybe that's because
+
+  - they got lucky
+  - they aren't trying to make too difficult of a dish
+  - they're an experienced cook
+  
+These situations have clear parallels to machine learning (maybe you got lucky or maybe all you need is a simple model or maybe you're an experience data scientist).
+
+I feel like this analogy is a pretty straightforward way to explain machine learning to a broad audience of people that are interested in the topic. It wouldn't surprise if someone has written something along the same lines, but I haven't read anything similar. If you know of another post with similar sentiments, I hope you'll share it with me!
+
+Thanks for reading my post and leave a comment below if you have any thoughts or feedback!
+
+
+
+
+
+
+
+
+
