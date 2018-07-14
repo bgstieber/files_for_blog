@@ -13,7 +13,7 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE,
 
 # Introduction
 
-In this post, I'm going to make the claim that the machine learning process can be explained by using the analogy of making a soup. Relying on some insight from the [CRISP-DM framework](), my own experience as an amateur chef, and the well-known [iris data set](), I'm going to try to convince you that the soup and machine learning connection is a pretty decent first approximation you could use while explaining the machine learning process.
+In this post, I'm going to make the claim that parts of the machine learning process can be simplified by using the analogy of making soup. Relying on some insight from the [CRISP-DM framework](https://en.wikipedia.org/wiki/Cross-industry_standard_process_for_data_mining), my own experience as an amateur chef, and the well-known [iris data set](https://archive.ics.uci.edu/ml/datasets/iris), I'm going to try to convince you that the soup and machine learning connection is a pretty decent first approximation you could use while explaining the machine learning process.
 
 This post is pretty light on code, with just a little bit of it at the end for illustrative purposes. These are the packages we'll need.
 
@@ -26,11 +26,13 @@ library(caret)
 
 # Some Background
 
-I recently gave a presentation on the CRISP-DM framework to the various teams that make up the IT Department at my organization. While I was discussing the Modeling phase of the CRISP-DM framework, I got some questions that come up fairly often when you talk about data science with a fairly technical audience.
+<p><a href="https://commons.wikimedia.org/wiki/File:CRISP-DM_Process_Diagram.png#/media/File:CRISP-DM_Process_Diagram.png"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/CRISP-DM_Process_Diagram.png" alt="CRISP-DM Process Diagram.png" height="400" width="400"></a><br> The CRISP-DM Framework (Kenneth Jensen) <a href="https://creativecommons.org/licenses/by-sa/3.0" title="Creative Commons Attribution-Share Alike 3.0">CC BY-SA 3.0</a>, <a href="https://commons.wikimedia.org/w/index.php?curid=24930610">Link</a></p>
+
+I recently gave a presentation on the CRISP-DM framework to the various teams that make up the IT Department at my organization. While I was discussing the Modeling phase of CRISP-DM, I got some questions that come up fairly often when you talk about data science with a fairly technical audience.
 
 _When you're building a model, what are you doing? Where are you spending your time? How long does that take?_
 
-The people in IT know that data, machine learning, and artificial intelligence are impacting our daily lives, from [chat bots]() to [spam email detection]() to the [curation of news feeds](). While they have tremendous awareness of the _impact_ of data science (along with sophisticated knowledge of servers and frameworks), they may not have as much awareness of the _processes_ of data science.
+The people in IT know that data, machine learning, and artificial intelligence are impacting our daily lives, from [chat bots](https://www.kdnuggets.com/2017/08/deep-learning-train-chatbot-talk-like-me.html) to [spam email detection](https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering) to the [curation of news feeds](http://fortune.com/facebook-machine-learning/). While they have tremendous awareness of the _impact_ of data science (along with sophisticated knowledge of servers and frameworks), they may not have as much awareness of the _processes_ of data science. I think the responsibility of demystifying machine learning rests on data scientists, and it's imperative to have comprehensible mental models that can be employed to describe and de-clutter the machine learning process.
 
 I thought I did a fairly good job of breaking down the three components of machine learning and the typical amount of iteration within each component by mirroring the CRISP-DM breakdown:
 
@@ -41,19 +43,21 @@ I thought I did a fairly good job of breaking down the three components of machi
   - Feature engineering and selection
       - Iteration level: high
   
-Of course, I was in a room full of people, trying to extemporaneously explain parameter tuning and feature engineering in a coherent way, so I probably could have done a better job.
+Of course, I was in a room full of very smart people, trying to extemporaneously explain parameter tuning and feature engineering in a coherent way, so I probably could have done a better job.
 
 A few minutes after the meeting, I realized I could have used a very simple analogy to explain the machine learning process.
 
 __Machine learning is like making a soup. First, you pick the type of soup you want to make. Second, you figure out what types of ingredients are going to be in the soup and how these ingredients are going to be prepped. Third, you determine how you're going to cook the soup. Finally, you taste the soup and iterate to hopefully make it taste better.__
 
-
 # Making a Soup = Machine Learning
 
 While I'm certainly not an expert chef, I think you can boil down making a soup into a few simple components.
 
+<iframe src="https://giphy.com/embed/xT9DPhWvvzbSI5vrYQ" width="480" height="270" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/cravetvcanada-seinfeld-xT9DPhWvvzbSI5vrYQ">via GIPHY</a></p>
 
 ## Picking the Soup = Selecting a Modeling Technique
+
+In this step, we're just trying to figure out what we want to make (and hopefully enjoy). In the machine learning world, this is where we need to think carefully about the problem we're trying to solve, and which of the many machine learning algorithms can be used to attack the problem.
 
 __Soup Making:__ what type of soup are we trying to make? are there external characteristics (season, weather, mood) we should consider? what soup will we enjoy? how difficult is this soup to make?
 
@@ -61,15 +65,19 @@ __Machine Learning:__ what type of question are we trying to answer? what type o
 
 ## Ingredients = Feature Engineering & Selection
 
+Now that we've decided what we're going to make, we need to head to the grocery store and pick up the ingredients. After that we'll need to prepare the ingredients for cooking. Similarly, we'll need to understand our data set, and create/transform/aggregate our variables to get them into a useful form for modeling.
+
 __Soup Making:__ what vegetables are needed and how should they be prepped? what type of protein will we be using? is the soup butter-based, cream-based or something else?
 
 __Machine Learning:__ what variables are needed for this model? do we need to standardize any of the variables? are there non-numeric variables? if so, how should those be handled?
 
 ## Cooking Methods = Parameter Tuning
 
-__Soup Making:__ what heat are we cooking at and for how long? is the pot covered or uncovered? will the pot be on the stovetop for the entirety of cooking or will we move it to the oven? how long will we let the soup simmer? how big of a batch are we making?
 
-__Machine Learning:__ what is our loss function? is there a learning rate? what's the k in our k-fold cross validation? how many trees in our random forest? how much should we penalize complexity? what is the training/validation split?
+
+__Soup Making:__ what heat are we cooking at and for how long? is the pot covered or uncovered? will the pot be on the stove top for the entirety of cooking or will we move it to the oven? how long will we let the soup simmer? how big of a batch are we making?
+
+__Machine Learning:__ what is our loss function? is there a learning rate? what's the k in our k-fold cross validation? how many trees in our random forest? how much should we penalize complexity? what is the training/validation split? does an ensemble model outperform a single model?
 
 # Building a Model
 
@@ -102,10 +110,12 @@ What type of model?
 
 ## Ingredients
 
-Variable selection and feature engineering
+Feature engineering and selection is one of the most time consuming parts of the machine learning process. To keep this post brief, I'm going to go through a few feature engineering and selection steps.
 
+First, we split the data into [training and testing](https://en.wikipedia.org/wiki/Training,_test,_and_validation_sets) sets. After this, I extract only the numeric predictor variables for the model, and then add squared terms as well as interactions between each of the first order effects. These two steps transforms the predictor matrix from four columns into fourteen, more than tripling the original size. Finally, we use the `preProcess` function from the [__`caret`__](https://topepo.github.io/caret/index.html) package to center and scale each numeric variable so that it has zero mean and unit variance.
 
 ```{r}
+set.seed(123)
 # create training and testing split
 training_index <- sample(nrow(iris), 0.7 * nrow(iris))
 iris_train <- iris[training_index,]
@@ -113,21 +123,15 @@ iris_test <- iris[-training_index,]
 # grab X data add squared term for each column
 iris_X_train <- iris_train[,-5] %>%
   mutate_all(funs('sq' = . ^ 2))
-
 iris_X_test <- iris_test[,-5] %>%
   mutate_all(funs('sq' = . ^ 2))
-
 # all two way interactions with first order terms
-iris_X_train <- model.matrix( ~ -1 + . + 
-                                (Sepal.Length + Sepal.Width +
-                                   Petal.Length + Petal.Width) ^ 2,
-                              data = iris_X_train)
-
-iris_X_test <- model.matrix( ~ -1 + . + 
-                                (Sepal.Length + Sepal.Width +
-                                   Petal.Length + Petal.Width) ^ 2,
-                              data = iris_X_test)
-
+iris_X_train <- 
+  model.matrix(~-1 + . + (Sepal.Length+Sepal.Width+Petal.Length+Petal.Width) ^ 2,
+               data = iris_X_train)
+iris_X_test <-
+  model.matrix(~-1 + . + (Sepal.Length+Sepal.Width+Petal.Length+Petal.Width) ^ 2,
+               data = iris_X_test)
 # fit center and scale processor on training data
 preProc <- preProcess(iris_X_train)
 iris_X_train_cs <- predict(preProc, iris_X_train)
@@ -136,6 +140,12 @@ iris_X_test_cs <- predict(preProc, iris_X_test)
 iris_y_train <- as.factor(as.numeric(iris_train$Species == 'setosa'))
 iris_y_test <- as.factor(iris_test$Species == 'setosa')
 ```
+
+We'll see a little later that this work probably wasn't necessary, as we only need the four original data columns to build a fairly strong model for predicting whether a flower is from the setosa species. The data augmentation steps only created numeric variables, but often times we'll use decision trees or similar techniques to create categorical variables from numeric. We use those methods when it's unnecessary to retain the continuous nature of a numeric variable (often the case with age or physiological measurements like height or weight).
+
+After we've gone through the feature engineering step, we can think about which variables we'll actually want to use in our model. There can be considerable back-and-forth between feature engineering and feature selection, just like iterating on a recipe may involve different ingredients and different ways of preparing those ingredients.
+
+
 
 
 ## Cooking Methods
@@ -152,7 +162,7 @@ When we compare making a soup to machine learning, we get a fairly simple and un
   
 These situations have clear parallels to machine learning (maybe you got lucky or maybe all you need is a simple model or maybe you're an experience data scientist).
 
-I feel like this analogy is a pretty straightforward way to explain machine learning to a broad audience of people that are interested in the topic. It wouldn't surprise if someone has written something along the same lines, but I haven't read anything similar. If you know of another post with similar sentiments, I hope you'll share it with me!
+I feel like this analogy is a pretty straightforward way to explain machine learning to a broad audience of people that are interested in the topic. I found a [similar article](https://www.becomingadatascientist.com/2017/07/17/introductory-machine-learning-terminology-with-food/) which discussed ideas that are related to the ones I talked about in my post. If you know of any other posts with similar sentiments, I hope you'll share it with me!
 
 Thanks for reading my post and leave a comment below if you have any thoughts or feedback!
 
