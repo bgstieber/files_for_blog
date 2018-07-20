@@ -102,11 +102,17 @@ legend("bottomright",
        legend = c(levels(iris$Species)))
 ```
 
-The iris data is used as a "hello, world" in data science. It has nice applications across a broad spectrum of applications: [clustering](https://cran.r-project.org/web/packages/dendextend/vignettes/Cluster_Analysis.html), [regression](https://warwick.ac.uk/fac/sci/moac/people/students/peter_cock/r/iris_lm/), [classification](http://michael.hahsler.net/SMU/EMIS7332/R/logistic_regression.html), and [visualization](https://bl.ocks.org/mbostock/4063663). It's worth getting [excited](https://eagereyes.org/blog/2018/how-to-get-excited-about-standard-datasets) about!
+Just looking at the paired scatter plot above, we can see that trying to classify flowers into the setosa species is a bit of a toy problem. Using this data, just by examining if the petal length of a flower is smaller than 2.45, we can determine if the flower is from the setosa species.
+
+```{r}
+table('Petal Cut' = iris$Petal.Length >= 2.45,'Setosa' = iris$Species == 'setosa')
+```
+
+The iris data is used as a ["hello, world"](https://en.wikipedia.org/wiki/%22Hello,_World!%22_program) in data science. It has nice applications across a broad spectrum of applications: [clustering](https://cran.r-project.org/web/packages/dendextend/vignettes/Cluster_Analysis.html), [regression](https://warwick.ac.uk/fac/sci/moac/people/students/peter_cock/r/iris_lm/), [classification](http://michael.hahsler.net/SMU/EMIS7332/R/logistic_regression.html), and [visualization](https://bl.ocks.org/mbostock/4063663). It's worth getting [excited](https://eagereyes.org/blog/2018/how-to-get-excited-about-standard-datasets) about!
 
 ## Picking the Soup
 
-By design, the problem we're trying to tackle is predicting if a flower is from the setosa species. Since we already know that there is something we're specifically trying to predict, we only have to explore supervised machine learning algorithms. We also know that we're not really interested in building a model which generates predictions on a continuous range. We only want the answer a _binary_ question: is this a setosa or not?
+As discussed earlier, the problem we're trying to tackle is predicting if a flower is from the setosa species. Since we already know that there is something we're specifically trying to predict, we only have to explore supervised machine learning algorithms. We also know that we're not really interested in building a model which generates predictions on a continuous range. We only want the answer a _binary_ question: is this a setosa or not?
 
 This narrows the set of algorithms even further, and we only need to explore models which will either generate a classification for a flower, or will generate a probability of the flower's species being setosa.
 
@@ -191,9 +197,14 @@ cv_glm1 <- cv.glmnet(x = iris_X_train_cs_sub,
                      standardize = FALSE,
                      intercept = FALSE) 
 
-plot(cv_glm1)
-lambda_1se_1 <- cv_glm1$lambda.1se
+lambda_1se_1 <- cv_glm1$lambda.1se # store "best" lambda for now
 
+plot(cv_glm1)
+```
+
+It looks like we can explore $\lambda$ a bit more, and at the same time improve our model fit.
+
+```{r}
 cv_glm2 <- cv.glmnet(x = iris_X_train_cs_sub,
                      y = iris_y_train,
                      alpha = 0,
@@ -203,14 +214,14 @@ cv_glm2 <- cv.glmnet(x = iris_X_train_cs_sub,
                      standardize = FALSE,
                      intercept = FALSE)
 
-plot(cv_glm2)
-abline(v = lambda_1se_1)
-
 lambda_2 <- exp(-6.5)
+plot(cv_glm2)
 ```
 
 
 ## Tasting the soup
+
+After we fit the model (or make the soup), we have to determine how good it is. For this example, I'm going to use a simple method for determining the classification accuracy. Basically, I'm just going to check the % of time the classifier got the species correct. 
 
 ```{r}
 # naive classification accuracy
