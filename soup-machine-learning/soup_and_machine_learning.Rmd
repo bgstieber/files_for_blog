@@ -20,7 +20,7 @@ This post is pretty light on code, with just a little bit of it at the end for i
 ```{r}
 library(tidyverse)
 library(glmnet)
-library(caret)
+library(caret) # caret or carrot?
 ```
 
 
@@ -32,7 +32,7 @@ I recently gave a presentation on the CRISP-DM framework to the various teams th
 
 _When you're building a model, what are you doing? Where are you spending your time? How long does that take?_
 
-The people in IT know that data, machine learning, and artificial intelligence are impacting our daily lives, from [chat bots](https://www.kdnuggets.com/2017/08/deep-learning-train-chatbot-talk-like-me.html) to [spam email detection](https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering) to the [curation of news feeds](http://fortune.com/facebook-machine-learning/). While they have tremendous awareness of the _impact_ of data science (along with sophisticated knowledge of servers and frameworks), they may not have as much awareness of the _processes_ of data science. I think the responsibility of demystifying machine learning rests on data scientists, and it's imperative to have comprehensible mental models that can be employed to describe and de-clutter the machine learning process.
+The people in IT know that data, machine learning, and artificial intelligence are impacting our daily lives, from [chat bots](https://www.kdnuggets.com/2017/08/deep-learning-train-chatbot-talk-like-me.html) to [spam email detection](https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering) to the [curation of news feeds](http://fortune.com/facebook-machine-learning/). While they have tremendous awareness of the _impact_ of data science (along with technical acumen), they may not have as much awareness of the _processes_ of data science. I think the responsibility of demystifying machine learning rests on data scientists, and it's imperative to have comprehensible mental models that can be employed to describe and de-clutter the machine learning process.
 
 I thought I did a fairly good job of breaking down the three components of machine learning and the typical amount of iteration within each component by mirroring the CRISP-DM breakdown:
 
@@ -73,7 +73,7 @@ __Machine Learning:__ what variables are needed for this model? do we need to st
 
 ## Cooking Methods = Parameter Tuning
 
-
+Once we've decided upon the type of soup and the ingredient, it comes time to actually make the soup. This step involves select the best combination of different cooking methods to make the optimal (i.e. most tasty) soup. When we perform parameter tuning, we're trying to pick the best combination of values to make our machine learning algorithms reach optimal performance. These values are different from the variables we previously discussed, as the variables are the _inputs_ for our ML algorithms, while the tuning parameters describe the algorithm itself.
 
 __Soup Making:__ what heat are we cooking at and for how long? is the pot covered or uncovered? will the pot be on the stove top for the entirety of cooking or will we move it to the oven? how long will we let the soup simmer? how big of a batch are we making?
 
@@ -106,7 +106,11 @@ The iris data is used as a "hello, world" in data science. It has nice applicati
 
 ## Picking the Soup
 
-What type of model?
+By design, the problem we're trying to tackle is predicting if a flower is from the setosa species. Since we already know that there is something we're specifically trying to predict, we only have to explore supervised machine learning algorithms. We also know that we're not really interested in building a model which generates predictions on a continuous range. We only want the answer a _binary_ question: is this a setosa or not?
+
+This narrows the set of algorithms even further, and we only need to explore models which will either generate a classification for a flower, or will generate a probability of the flower's species being setosa.
+
+For this post, I'm going to use [elastic net](https://en.wikipedia.org/wiki/Elastic_net_regularization) logistic regression. Elastic net fits a logistic regression while also penalizing the complexity of the model. The excellent [__`glmnet`__](https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html) package allows us to build models in this fashion. I'm going to use ridge regression (elastic net with $\alpha=0$), which penalizes the $L_2$ norm of the coefficients. Fitting an elastic net with $\alpha=1$ generates a LASSO model, which can also be useful for variable selection, but I'm using a different technique to do variable selection in this post, so I'm sticking with ridge here. 
 
 ## Ingredients
 
@@ -141,16 +145,103 @@ iris_y_train <- as.factor(as.numeric(iris_train$Species == 'setosa'))
 iris_y_test <- as.factor(iris_test$Species == 'setosa')
 ```
 
-We'll see a little later that this work probably wasn't necessary, as we only need the four original data columns to build a fairly strong model for predicting whether a flower is from the setosa species. The data augmentation steps only created numeric variables, but often times we'll use decision trees or similar techniques to create categorical variables from numeric. We use those methods when it's unnecessary to retain the continuous nature of a numeric variable (often the case with age or physiological measurements like height or weight).
+The data augmentation steps I went through only created numeric variables, but often times we'll use decision trees or similar techniques to create categorical variables from numeric. We use those methods when it's unnecessary to retain the continuous nature of a numeric variable (often the case with age or physiological measurements like height or weight).
 
 After we've gone through the feature engineering step, we can think about which variables we'll actually want to use in our model. There can be considerable back-and-forth between feature engineering and feature selection, just like iterating on a recipe may involve different ingredients and different ways of preparing those ingredients.
 
+To do feature selection, I'm going to once again turn to the __`caret`__ package and use the `rfe` function. We could also use the infrastructure of the __`glmnet`__ package to do some feature selection, as the [LASSO](https://en.wikipedia.org/wiki/Lasso_(statistics) helps us perform variable selection. 
 
+```{r}
+set.seed(123)
+rf_control <- rfeControl(rfFuncs, method = 'cv', number = 5)
+
+iris_rfe <- rfe(x = iris_X_train_cs, 
+                y = iris_y_train,
+                sizes = 2:14, # select at least two variables
+                rfeControl = rf_control)
+
+iris_rfe$optVariables
+```
+
+The procedure we used for variable selection is pretty straightforward, and suggested an interaction between the petal length and petal width variables, and petal length squared. It's generally a bad idea to include higher ordered terms without also including the lower order terms, so our final model will have three variables: petal width, petal length, and petal width * petal length.
 
 
 ## Cooking Methods
 
-Parameter tuning
+In elastic net regression, we have two parameters to select: $\alpha$ and $\lambda$. $\alpha$ controls the weight we give to the $L_1$ and $L_2$ penalties (with $\alpha$ being placed on the $L_1$ norm, and $1-\alpha$ being placed on the $L_2$ norm). Putting all of the weight on $L_2$ norm is better known as [Tikhonov regularization or ridge regression](https://en.wikipedia.org/wiki/Tikhonov_regularization). I've already made my choice of $\alpha$ for this post, so we don't have to tune it.
+
+The other parameter we need to tune is $\lambda$, which controls the overall strength of the penalty we'll place on the $L_2$ norm of the coefficients. A higher $\lambda$ value will "shrink" the model's coefficients, whereas a smaller $\lambda$ value will result in a model more similar to the standard un-regularized logistic regression fit.
+
+As we'll see, the `cv.glmnet` function allows us to use cross-validation to tune $\lambda$. 
+
+```{r}
+vv <- c("Petal.Width", "Petal.Length", "Petal.Length:Petal.Width")
+
+iris_X_train_cs_sub <- iris_X_train_cs[, colnames(iris_X_train_cs) %in% vv]
+iris_X_test_cs_sub <- iris_X_test_cs[, colnames(iris_X_test_cs) %in% vv]
+```
+
+
+```{r}
+cv_glm1 <- cv.glmnet(x = iris_X_train_cs_sub,
+                     y = iris_y_train,
+                     alpha = 0,
+                     family = 'binomial',
+                     nfolds = length(iris_y_train) - 1,# LOOCV
+                     standardize = FALSE,
+                     intercept = FALSE) 
+
+plot(cv_glm1)
+lambda_1se_1 <- cv_glm1$lambda.1se
+
+cv_glm2 <- cv.glmnet(x = iris_X_train_cs_sub,
+                     y = iris_y_train,
+                     alpha = 0,
+                     lambda = exp(seq(-10, log(lambda_1se_1), length.out = 500)),
+                     family = 'binomial',
+                     nfolds = length(iris_y_train) - 1,# LOOCV
+                     standardize = FALSE,
+                     intercept = FALSE)
+
+plot(cv_glm2)
+abline(v = lambda_1se_1)
+
+lambda_2 <- exp(-6.5)
+```
+
+
+## Tasting the soup
+
+```{r}
+# naive classification accuracy
+class_acc <- function(preds, labels, thresh = 0.5){
+  tt <- table(preds > thresh, labels)
+  
+  sum(diag(tt)) / sum(tt)
+}
+```
+
+
+```{r}
+ridge_1 <- glmnet(x = iris_X_train_cs_sub, y = iris_y_train,
+                  family = 'binomial', lambda = lambda_1se_1, alpha = 0,
+                  standardize = FALSE, intercept = FALSE)
+
+ridge_2 <- glmnet(x = iris_X_train_cs_sub, y = iris_y_train,
+                  family = 'binomial', lambda = lambda_2, alpha = 0,
+                  standardize = FALSE, intercept = FALSE)
+
+glm1 <- glm(iris_y_train ~ -1 + ., data = data.frame(iris_X_train_cs_sub), 
+            family = 'binomial')
+
+glm2 <- glm(iris_y_train ~ -1 + Sepal.Length+Sepal.Width+Petal.Length+Petal.Width,
+            data = data.frame(iris_X_train_cs), 
+            family = 'binomial') 
+```
+
+
+
+
 
 # Wrapping Up
 
