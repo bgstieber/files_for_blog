@@ -32,9 +32,9 @@ I recently gave a presentation on the CRISP-DM framework to the various teams th
 
 _When you're building a model, what are you doing? Where are you spending your time? How long does that take?_
 
-The people in IT know that data, machine learning, and artificial intelligence are impacting our daily lives, from [chat bots](https://www.kdnuggets.com/2017/08/deep-learning-train-chatbot-talk-like-me.html) to [spam email detection](https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering) to the [curation of news feeds](http://fortune.com/facebook-machine-learning/). While they have tremendous awareness of the _impact_ of data science (along with technical acumen), they may not have as much awareness of the _processes_ of data science. I think the responsibility of demystifying machine learning rests on data scientists, and it's imperative to have comprehensible mental models that can be employed to describe and de-clutter the machine learning process.
+The people in IT know that data, machine learning, and artificial intelligence are impacting our daily lives, from [chat bots](https://www.kdnuggets.com/2017/08/deep-learning-train-chatbot-talk-like-me.html) to [spam email detection](https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering) to the [curation of news feeds](http://fortune.com/facebook-machine-learning/). While they have tremendous awareness of the _impact_ of data science, they may not have as much awareness of the _processes_ of data science. I think the responsibility of demystifying machine learning rests on data scientists, and it's imperative to have comprehensible mental models that can be employed to describe and de-clutter the machine learning process.
 
-I thought I did a fairly good job of breaking down the three components of machine learning and the typical amount of iteration within each component by mirroring the CRISP-DM breakdown:
+In my response to the questions, I thought I did a fairly good job of breaking down the three components of machine learning and the typical amount of iteration within each component by mirroring the CRISP-DM breakdown:
 
   - Problem type and associated modeling technique
       - Iteration level: low
@@ -102,7 +102,7 @@ legend("bottomright",
        legend = c(levels(iris$Species)))
 ```
 
-Just looking at the paired scatter plot above, we can see that trying to classify flowers into the setosa species is a bit of a toy problem. Using this data, just by examining if the petal length of a flower is smaller than 2.45, we can determine if the flower is from the setosa species.
+Just looking at the [scatterplot matrix](https://www.itl.nist.gov/div898/handbook/eda/section3/scatterb.htm) above, we can see that trying to classify flowers into the setosa species is a bit of a toy problem (the red points are well-separated from the blue and green). Using this data, just by examining if the petal length of a flower is smaller than 2.45, we can determine if the flower is from the setosa species.
 
 ```{r}
 table('Petal Cut' = iris$Petal.Length >= 2.45,'Setosa' = iris$Species == 'setosa')
@@ -120,7 +120,7 @@ For this post, I'm going to use [elastic net](https://en.wikipedia.org/wiki/Elas
 
 ## Ingredients
 
-Feature engineering and selection is one of the most time consuming parts of the machine learning process. To keep this post brief, I'm going to go through a few feature engineering and selection steps.
+Feature engineering and selection is one of the most time consuming parts of the machine learning process. To keep this post brief, I'm going to go through just a few feature engineering and selection steps.
 
 First, we split the data into [training and testing](https://en.wikipedia.org/wiki/Training,_test,_and_validation_sets) sets. After this, I extract only the numeric predictor variables for the model, and then add squared terms as well as interactions between each of the first order effects. These two steps transforms the predictor matrix from four columns into fourteen, more than tripling the original size. Finally, we use the `preProcess` function from the [__`caret`__](https://topepo.github.io/caret/index.html) package to center and scale each numeric variable so that it has zero mean and unit variance.
 
@@ -131,10 +131,8 @@ training_index <- sample(nrow(iris), 0.7 * nrow(iris))
 iris_train <- iris[training_index,]
 iris_test <- iris[-training_index,]
 # grab X data add squared term for each column
-iris_X_train <- iris_train[,-5] %>%
-  mutate_all(funs('sq' = . ^ 2))
-iris_X_test <- iris_test[,-5] %>%
-  mutate_all(funs('sq' = . ^ 2))
+iris_X_train <- iris_train[,-5] %>% mutate_all(funs('sq' = . ^ 2))
+iris_X_test <- iris_test[,-5] %>% mutate_all(funs('sq' = . ^ 2))
 # all two way interactions with first order terms
 iris_X_train <- 
   model.matrix(~-1 + . + (Sepal.Length+Sepal.Width+Petal.Length+Petal.Width) ^ 2,
@@ -155,7 +153,7 @@ The data augmentation steps I went through only created numeric variables, but o
 
 After we've gone through the feature engineering step, we can think about which variables we'll actually want to use in our model. There can be considerable back-and-forth between feature engineering and feature selection, just like iterating on a recipe may involve different ingredients and different ways of preparing those ingredients.
 
-To do feature selection, I'm going to once again turn to the __`caret`__ package and use the `rfe` function. We could also use the infrastructure of the __`glmnet`__ package to do some feature selection, as the [LASSO](https://en.wikipedia.org/wiki/Lasso_(statistics) helps us perform variable selection. 
+To do feature selection, I'm going to once again turn to the __`caret`__ package and use the `rfe` function. We could also use the infrastructure of the __`glmnet`__ package to do some feature selection, as the [LASSO](https://en.wikipedia.org/wiki/Lasso_(statistics)) helps us perform variable selection. 
 
 ```{r}
 set.seed(123)
@@ -169,14 +167,14 @@ iris_rfe <- rfe(x = iris_X_train_cs,
 iris_rfe$optVariables
 ```
 
-The procedure we used for variable selection is pretty straightforward, and suggested an interaction between the petal length and petal width variables, and petal length squared. It's generally a bad idea to include higher ordered terms without also including the lower order terms, so our final model will have three variables: petal width, petal length, and petal width * petal length.
+The procedure we used for variable selection is pretty straightforward, and suggested an interaction between the petal length and petal width variables, and petal length squared. It's generally a bad idea to include higher ordered terms without also including the lower order terms, so our final model will have three variables: petal width, petal length, and petal width * petal length interaction.
 
 
 ## Cooking Methods
 
 In elastic net regression, we have two parameters to select: $\alpha$ and $\lambda$. $\alpha$ controls the weight we give to the $L_1$ and $L_2$ penalties (with $\alpha$ being placed on the $L_1$ norm, and $1-\alpha$ being placed on the $L_2$ norm). Putting all of the weight on $L_2$ norm is better known as [Tikhonov regularization or ridge regression](https://en.wikipedia.org/wiki/Tikhonov_regularization). I've already made my choice of $\alpha$ for this post, so we don't have to tune it.
 
-The other parameter we need to tune is $\lambda$, which controls the overall strength of the penalty we'll place on the $L_2$ norm of the coefficients. A higher $\lambda$ value will "shrink" the model's coefficients, whereas a smaller $\lambda$ value will result in a model more similar to the standard un-regularized logistic regression fit.
+The other parameter we need to tune is $\lambda$, which controls the overall strength of the penalty we'll place on the $L_2$ norm of the coefficients. A higher $\lambda$ value will "shrink" the model's coefficients, whereas a smaller $\lambda$ value will result in a model more similar to the standard unregularized logistic regression fit.
 
 As we'll see, the `cv.glmnet` function allows us to use cross-validation to tune $\lambda$. 
 
@@ -218,20 +216,21 @@ lambda_2 <- exp(-6.5)
 plot(cv_glm2)
 ```
 
+Cross-validation suggests a rather small value of $\lambda$, indicating that the model's fit doesn't improve with a high degree of regularization. In the next section, we'll use two values of $\lambda$ to fit the model ($\lambda_1$ = `r lambda_1se_1`, $\lambda_2$ = `r lambda_2`), and then investigate the results. 
 
 ## Tasting the soup
 
-After we fit the model (or make the soup), we have to determine how good it is. For this example, I'm going to use a simple method for determining the classification accuracy. Basically, I'm just going to check the % of time the classifier got the species correct. 
+After we fit the model (or make the soup), we have to determine how good it is. For this example, I'm going to use a simple method for determining the classification accuracy. Basically, I'm just going to check the % of time the classifier got the species correct. Using this metric implies that we're treating false positive and false negatives as equally bad errors. In most real world situations, this is not the case. 
 
 ```{r}
 # naive classification accuracy
 class_acc <- function(preds, labels, thresh = 0.5){
   tt <- table(preds > thresh, labels)
-  
   sum(diag(tt)) / sum(tt)
 }
 ```
 
+In addition to the two models fit using regularization, I'm also going to fit models using _all_ of the variables we've created, as well as a simple model with only the original variables from the iris data set.
 
 ```{r}
 ridge_1 <- glmnet(x = iris_X_train_cs_sub, y = iris_y_train,
@@ -251,7 +250,28 @@ glm2 <- glm(iris_y_train ~ -1 + Sepal.Length+Sepal.Width+Petal.Length+Petal.Widt
 ```
 
 
+```{r echo = FALSE}
+preds_r1 <- predict(ridge_1, newx = iris_X_test_cs_sub, type = 'response')
+preds_r2 <- predict(ridge_2, newx = iris_X_test_cs_sub, type = 'response')
+preds_g1 <- predict(glm1, newdata = data.frame(iris_X_test_cs), type = 'response')
+preds_g2 <- predict(glm2, newdata = data.frame(iris_X_test_cs), type = 'response')
 
+acc_r1 <- class_acc(preds_r1, iris_y_test)
+acc_r2 <- class_acc(preds_r2, iris_y_test)
+acc_g1 <- class_acc(preds_g1, iris_y_test)
+acc_g2 <- class_acc(preds_g2, iris_y_test)
+
+model_dat <- data_frame(
+  'model' = c('ridge_1', 'ridge_2', 'glm1', 'glm2'),
+  'type' = c('regularized-lambda1', 'regularized-lambda2',
+             'full', 'original'),
+  'class accuracy' = scales::percent(c(acc_r1, acc_r2, acc_g1, acc_g2))
+)
+
+model_dat %>% knitr::kable(caption = 'Table of Model Accuracy')
+```
+
+In the table above, we can see that the unregularized models resulted in better predictions on our test set. This shouldn't be too surprising, as this classification example is fairly contrived. In more realistic settings, we may see better predictive performance from models fit using regularization.
 
 
 # Wrapping Up
@@ -262,7 +282,7 @@ When we compare making a soup to machine learning, we get a fairly simple and un
   - they aren't trying to make too difficult of a dish
   - they're an experienced cook
   
-These situations have clear parallels to machine learning (maybe you got lucky or maybe all you need is a simple model or maybe you're an experience data scientist).
+These situations have clear parallels to machine learning (maybe you got lucky and your prediction task is fairly easy or maybe all you need is a simple model or maybe you're an experience data scientist).
 
 I feel like this analogy is a pretty straightforward way to explain machine learning to a broad audience of people that are interested in the topic. I found a [similar article](https://www.becomingadatascientist.com/2017/07/17/introductory-machine-learning-terminology-with-food/) which discussed ideas that are related to the ones I talked about in my post. If you know of any other posts with similar sentiments, I hope you'll share it with me!
 
