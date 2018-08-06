@@ -13,7 +13,7 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE,
 
 # Introduction
 
-In this post, I'm going to make the claim that we can simplify some parts of the machine learning process by using the analogy of making soup. I think this analogy can both simplify how a data scientist explains machine learning to a broad audience, and it provides a helpful framework throughout the model building process.
+In this post, I'm going to make the claim that we can simplify some parts of the machine learning process by using the analogy of making soup. I think this analogy can improve how a data scientist explains machine learning to a broad audience, and it provides a helpful framework throughout the model building process.
 
 Relying on some insight from the [CRISP-DM framework](https://en.wikipedia.org/wiki/Cross-industry_standard_process_for_data_mining), my own experience as an amateur chef, and the well-known [iris data set](https://archive.ics.uci.edu/ml/datasets/iris), I'm going to explain why I think that the soup making and machine learning connection is a pretty decent first approximation you could use to understand the machine learning process. 
 
@@ -25,12 +25,13 @@ library(glmnet)
 library(caret) # caret or carrot? :)
 ```
 
+The code for this post can be found on [my GitHub](https://github.com/bgstieber/files_for_blog/tree/master/soup-machine-learning).
 
 # Some Background
 
 <p><a href="https://commons.wikimedia.org/wiki/File:CRISP-DM_Process_Diagram.png#/media/File:CRISP-DM_Process_Diagram.png"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/CRISP-DM_Process_Diagram.png" alt="CRISP-DM Process Diagram.png" height="400" width="400"></a><br> __The CRISP-DM Framework (Kenneth Jensen)__ <a href="https://creativecommons.org/licenses/by-sa/3.0" title="Creative Commons Attribution-Share Alike 3.0">CC BY-SA 3.0</a>, <a href="https://commons.wikimedia.org/w/index.php?curid=24930610">Link</a></p>
 
-I recently gave a presentation on the [CRISP-DM framework](https://en.wikipedia.org/wiki/Cross-industry_standard_process_for_data_mining) to the various teams that make up the IT Department at my organization. While I was discussing the Modeling phase of CRISP-DM, I got some questions that come up fairly often when you talk about data science with software-minded audiences.
+I recently gave a presentation on the [CRISP-DM framework](https://en.wikipedia.org/wiki/Cross-industry_standard_process_for_data_mining) to the various teams that make up the IT Department at my organization. While I was discussing the Modeling phase of CRISP-DM, I got some questions that come up when you talk about data science with software-minded audiences.
 
 _When you're building a model, what are you doing? Where are you spending your time? How long does that take?_
 
@@ -75,7 +76,7 @@ __Machine Learning:__ what variables are needed for this model? do we need to st
 
 ## Cooking Methods = Parameter Tuning
 
-Once we've decided upon the type of soup and the ingredient, it comes time to actually make the soup. This step involves select the best combination of different cooking methods to make the optimal (i.e. most tasty) soup. When we perform parameter tuning, we're trying to pick the best combination of values to make our machine learning algorithms reach optimal performance. These values are different from the variables we previously discussed, as the variables are the _inputs_ for our ML algorithms, while the tuning parameters describe the algorithm itself.
+Once we've decided upon the type of soup and the ingredient, it comes time to make the soup. This step involves select the best combination of different cooking methods to make the optimal (i.e. most tasty) soup. When we perform parameter tuning, we're trying to pick the best combination of values to make our machine learning algorithms reach optimal performance. These values are different from the variables we previously discussed, as the variables are the _inputs_ for our ML algorithms, while the tuning parameters describe the algorithm itself.
 
 __Soup Making:__ what heat are we cooking at and for how long? is the pot covered or uncovered? will the pot be on the stove top for the entirety of cooking or will we move it to the oven? how long will we let the soup simmer? how big of a batch are we making?
 
@@ -83,7 +84,7 @@ __Machine Learning:__ what is our loss function? is there a learning rate? what'
 
 # Building a Model
 
-Let's see this framework in action. I'm going to pick a fairly simple classification task to demonstrate. I'm going to use the [iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set) and try to predict whether a flower is from the setosa species.
+Let's see this framework in action. I'm going to pick a straightforward classification task to demonstrate. I'm going to use the [iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set) and try to predict whether a flower is from the setosa species.
 
 Here's a quick look at the data:
 
@@ -118,7 +119,7 @@ For this post, I'm going to use [elastic net](https://en.wikipedia.org/wiki/Elas
 
 ## Ingredients
 
-Feature engineering and selection is one of the most time consuming parts of the machine learning process. To keep this post brief, I'm going to go through just a few feature engineering steps.
+Feature engineering and selection is one of the most time-consuming parts of the machine learning process. To keep this post brief, I'm going to go through just a few feature engineering steps.
 
 First, we split the data into [training and testing](https://en.wikipedia.org/wiki/Training,_test,_and_validation_sets) sets. After this, I extract only the numeric predictor variables for the model, and then add squared terms as well as interactions between each of the first order effects. These two steps transform the predictor matrix from four columns into fourteen. Finally, we use the `preProcess` function from the [__`caret`__](https://topepo.github.io/caret/index.html) package to center and scale each variable so that it has mean = 0 and variance = 1.
 
@@ -170,7 +171,7 @@ The procedure we used for variable selection suggested an interaction between th
 
 ## Cooking Methods
 
-In elastic net regression, we have two parameters to select: $\alpha$ and $\lambda$. $\alpha$ controls the weight we give to the $L_1$ and $L_2$ penalties (with $\alpha$ being placed on the $L_1$ norm, and $1-\alpha$ being placed on the $L_2$ norm). Putting all of the weight on $L_2$ norm is better known as [Tikhonov regularization or ridge regression](https://en.wikipedia.org/wiki/Tikhonov_regularization). I've already made my choice of $\alpha$ for this post, so we don't have to tune it.
+In elastic net regression, we have two parameters to select: $\alpha$ and $\lambda$. $\alpha$ controls the weight we give to the $L_1$ and $L_2$ penalties (with $\alpha$ being placed on the $L_1$ norm, and $1-\alpha$ being placed on the $L_2$ norm). Putting all the weight on $L_2$ norm is better known as [Tikhonov regularization or ridge regression](https://en.wikipedia.org/wiki/Tikhonov_regularization). I've already made my choice of $\alpha$ for this post, so we don't have to tune it.
 
 The other parameter we need to tune is $\lambda$, which controls the strength of the penalty we'll place on the $L_2$ norm of the coefficients. A higher $\lambda$ value will "shrink" the model's coefficients, whereas a smaller $\lambda$ value will result in a model more similar to the standard unregularized logistic regression fit.
 
@@ -261,12 +262,12 @@ model_dat <- data_frame(
 model_dat %>% knitr::kable(caption = 'Table of Model Accuracy')
 ```
 
-In the table above, we can see that the unregularized models resulted in better predictions on our test set. This shouldn't be too surprising, as this classification example is fairly contrived. In more realistic settings, we may see better predictive performance from models fit using regularization.
+In the table above, we can see that the unregularized models resulted in better predictions on our test set. This shouldn't be too surprising, as this classification example is somewhat contrived. In more realistic settings, we may see better predictive performance from models fit using regularization.
 
 
 # Wrapping Up
 
-When we compare making a soup to machine learning, we get a fairly simple and understandable lens through which we can look at machine learning. Just like making soup or cooking in general, iteration is a key component of machine learning. If you ask anyone that's trying to develop a recipe, they probably won't get it right the first time. If they do get it right the first time, maybe that's because
+When we compare making a soup to machine learning, we get a simple and understandable lens through which we can look at machine learning. Just like making soup or cooking in general, iteration is a key component of machine learning. If you ask anyone that's trying to develop a recipe, they probably won't get it right the first time. If they do get it right the first time, maybe that's because
 
   - they got lucky
   - they aren't trying to make too difficult of a dish
