@@ -13,26 +13,28 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE,
 
 # Introduction
 
-In this post, I'm going to make the claim that parts of the machine learning process can be simplified by using the analogy of making soup. Relying on some insight from the [CRISP-DM framework](https://en.wikipedia.org/wiki/Cross-industry_standard_process_for_data_mining), my own experience as an amateur chef, and the well-known [iris data set](https://archive.ics.uci.edu/ml/datasets/iris), I'm going to try to convince you that the soup and machine learning connection is a pretty decent first approximation you could use while explaining the machine learning process.
+In this post, I'm going to make the claim that we can simplify some parts of the machine learning process by using the analogy of making soup. I think this analogy can both simplify how a data scientist explains machine learning to a broad audience, and it provides a helpful framework throughout the model building process.
 
-This post is pretty light on code, with just a little bit of it at the end for illustrative purposes. These are the packages we'll need.
+Relying on some insight from the [CRISP-DM framework](https://en.wikipedia.org/wiki/Cross-industry_standard_process_for_data_mining), my own experience as an amateur chef, and the well-known [iris data set](https://archive.ics.uci.edu/ml/datasets/iris), I'm going to explain why I think that the soup making and machine learning connection is a pretty decent first approximation you could use to understand the machine learning process. 
+
+This post is pretty light on code, with just a few code chunks for illustrative purposes. These are the packages we'll need.
 
 ```{r}
 library(tidyverse)
 library(glmnet)
-library(caret) # caret or carrot?
+library(caret) # caret or carrot? :)
 ```
 
 
 # Some Background
 
-<p><a href="https://commons.wikimedia.org/wiki/File:CRISP-DM_Process_Diagram.png#/media/File:CRISP-DM_Process_Diagram.png"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/CRISP-DM_Process_Diagram.png" alt="CRISP-DM Process Diagram.png" height="400" width="400"></a><br> The CRISP-DM Framework (Kenneth Jensen) <a href="https://creativecommons.org/licenses/by-sa/3.0" title="Creative Commons Attribution-Share Alike 3.0">CC BY-SA 3.0</a>, <a href="https://commons.wikimedia.org/w/index.php?curid=24930610">Link</a></p>
+<p><a href="https://commons.wikimedia.org/wiki/File:CRISP-DM_Process_Diagram.png#/media/File:CRISP-DM_Process_Diagram.png"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b9/CRISP-DM_Process_Diagram.png" alt="CRISP-DM Process Diagram.png" height="400" width="400"></a><br> __The CRISP-DM Framework (Kenneth Jensen)__ <a href="https://creativecommons.org/licenses/by-sa/3.0" title="Creative Commons Attribution-Share Alike 3.0">CC BY-SA 3.0</a>, <a href="https://commons.wikimedia.org/w/index.php?curid=24930610">Link</a></p>
 
-I recently gave a presentation on the CRISP-DM framework to the various teams that make up the IT Department at my organization. While I was discussing the Modeling phase of CRISP-DM, I got some questions that come up fairly often when you talk about data science with a fairly technical audience.
+I recently gave a presentation on the [CRISP-DM framework](https://en.wikipedia.org/wiki/Cross-industry_standard_process_for_data_mining) to the various teams that make up the IT Department at my organization. While I was discussing the Modeling phase of CRISP-DM, I got some questions that come up fairly often when you talk about data science with software-minded audiences.
 
 _When you're building a model, what are you doing? Where are you spending your time? How long does that take?_
 
-The people in IT know that data, machine learning, and artificial intelligence are impacting our daily lives, from [chat bots](https://www.kdnuggets.com/2017/08/deep-learning-train-chatbot-talk-like-me.html) to [spam email detection](https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering) to the [curation of news feeds](http://fortune.com/facebook-machine-learning/). While they have tremendous awareness of the _impact_ of data science, they may not have as much awareness of the _processes_ of data science. I think the responsibility of demystifying machine learning rests on data scientists, and it's imperative to have comprehensible mental models that can be employed to describe and de-clutter the machine learning process.
+The people in IT know that data, machine learning, and artificial intelligence are impacting their daily lives, from [chat bots](https://www.kdnuggets.com/2017/08/deep-learning-train-chatbot-talk-like-me.html) to [spam email detection](https://en.wikipedia.org/wiki/Naive_Bayes_spam_filtering) to the [curation of news feeds](http://fortune.com/facebook-machine-learning/). While they have awareness of the _impact_ of data science, they may not have as much awareness of the _processes_ of data science. I think the responsibility of demystifying machine learning rests on data scientists, and it's imperative to have comprehensible mental models that can be employed to describe and de-clutter the machine learning process.
 
 In my response to the questions, I thought I did a fairly good job of breaking down the three components of machine learning and the typical amount of iteration within each component by mirroring the CRISP-DM breakdown:
 
@@ -45,9 +47,9 @@ In my response to the questions, I thought I did a fairly good job of breaking d
   
 Of course, I was in a room full of very smart people, trying to extemporaneously explain parameter tuning and feature engineering in a coherent way, so I probably could have done a better job.
 
-A few minutes after the meeting, I realized I could have used a very simple analogy to explain the machine learning process.
+A few minutes after the meeting, I realized I could have used a simple analogy to explain the machine learning process.
 
-__Machine learning is like making a soup. First, you pick the type of soup you want to make. Second, you figure out what types of ingredients are going to be in the soup and how these ingredients are going to be prepped. Third, you determine how you're going to cook the soup. Finally, you taste the soup and iterate to hopefully make it taste better.__
+__Machine learning is like making a soup. First, you pick the type of soup you want to make. Second, you figure out the ingredients that are going to be in the soup and how they should be prepared. Third, you determine how you're going to cook the soup. Finally, you taste the soup and iterate to make it taste better.__
 
 # Making a Soup = Machine Learning
 
@@ -57,17 +59,17 @@ While I'm certainly not an expert chef, I think you can boil down making a soup 
 
 ## Picking the Soup = Selecting a Modeling Technique
 
-In this step, we're just trying to figure out what we want to make (and hopefully enjoy). In the machine learning world, this is where we need to think carefully about the problem we're trying to solve, and which of the many machine learning algorithms can be used to attack the problem.
+In this step, we're just trying to figure out what we want to make. In the machine learning world, this is where we need to think carefully about the problem we're trying to solve, and which of the many machine learning algorithms can be used to attack it.
 
 __Soup Making:__ what type of soup are we trying to make? are there external characteristics (season, weather, mood) we should consider? what soup will we enjoy? how difficult is this soup to make?
 
-__Machine Learning:__ what type of question are we trying to answer? what type of model will allow us to use data to answer this question? how is this model implemented? what are its assumptions?
+__Machine Learning:__ what type of question(s) are we trying to answer? what type of model will allow us to answer this question? how is this model implemented? what are its assumptions?
 
 ## Ingredients = Feature Engineering & Selection
 
-Now that we've decided what we're going to make, we need to head to the grocery store and pick up the ingredients. After that we'll need to prepare the ingredients for cooking. Similarly, we'll need to understand our data set, and create/transform/aggregate our variables to get them into a useful form for modeling.
+Now that we've decided what we're going to make, we need to head to the grocery store and pick up the ingredients. After that we'll need to prepare the ingredients for cooking. Similarly, we'll need to understand the variables and context for our data set, and create/transform/aggregate our variables to get them into a useful form for modeling.
 
-__Soup Making:__ what vegetables are needed and how should they be prepped? what type of protein will we be using? is the soup butter-based, cream-based or something else?
+__Soup Making:__ what vegetables are needed and how should they be prepped? what type of protein will we be using? do we need some type of stock for the soup?
 
 __Machine Learning:__ what variables are needed for this model? do we need to standardize any of the variables? are there non-numeric variables? if so, how should those be handled?
 
@@ -81,20 +83,16 @@ __Machine Learning:__ what is our loss function? is there a learning rate? what'
 
 # Building a Model
 
-Let's see this framework in action. I'm going to pick a fairly simple classification task to demonstrate.
+Let's see this framework in action. I'm going to pick a fairly simple classification task to demonstrate. I'm going to use the [iris dataset](https://en.wikipedia.org/wiki/Iris_flower_data_set) and try to predict whether a flower is from the setosa species.
 
-I'm going to use the iris dataset and try to predict whether a flower is from the setosa species.
-
-Here's a quick look at the data
+Here's a quick look at the data:
 
 ```{r echo = FALSE}
-knitr::kable(head(iris[sample(nrow(iris), 6), ]), row.names = FALSE)
+knitr::kable(head(iris[sample(nrow(iris), 6), ]), row.names = FALSE, align = 'l')
 ```
 
 ```{r echo = FALSE}
 iris_colors <- RColorBrewer::brewer.pal(3, 'Set1')[iris$Species]
-
-
 pairs(iris[, 1:4], col = iris_colors, oma=c(3,3,3,15))
 par(xpd = TRUE)
 legend("bottomright", 
@@ -102,7 +100,7 @@ legend("bottomright",
        legend = c(levels(iris$Species)))
 ```
 
-Just looking at the [scatterplot matrix](https://www.itl.nist.gov/div898/handbook/eda/section3/scatterb.htm) above, we can see that trying to classify flowers into the setosa species is a bit of a toy problem (the red points are well-separated from the blue and green). Using this data, just by examining if the petal length of a flower is smaller than 2.45, we can determine if the flower is from the setosa species.
+Just looking at the [scatterplot matrix](https://www.itl.nist.gov/div898/handbook/eda/section3/scatterb.htm) above, we can see that trying to classify flowers into the setosa species is a bit of a toy problem (the red points are well-separated from the blue and green). In fact, just by examining if the petal length of a flower is smaller than 2.45, we can determine if the flower is from the setosa species.
 
 ```{r}
 table('Petal Cut' = iris$Petal.Length >= 2.45,'Setosa' = iris$Species == 'setosa')
@@ -112,7 +110,7 @@ The iris data is used as a ["hello, world"](https://en.wikipedia.org/wiki/%22Hel
 
 ## Picking the Soup
 
-As discussed earlier, the problem we're trying to tackle is predicting if a flower is from the setosa species. Since we already know that there is something we're specifically trying to predict, we only have to explore supervised machine learning algorithms. We also know that we're not really interested in building a model which generates predictions on a continuous range. We only want the answer a _binary_ question: is this a setosa or not?
+As discussed earlier, the problem we're trying to tackle is predicting if a flower is from the setosa species. Since we already know that there is something we're trying to predict, we only have to explore supervised machine learning algorithms. We also know that we're not interested in building a model which generates predictions on a continuous range. We only want the answer a _binary_ question: is this a setosa or not?
 
 This narrows the set of algorithms even further, and we only need to explore models which will either generate a classification for a flower, or will generate a probability of the flower's species being setosa.
 
@@ -120,9 +118,9 @@ For this post, I'm going to use [elastic net](https://en.wikipedia.org/wiki/Elas
 
 ## Ingredients
 
-Feature engineering and selection is one of the most time consuming parts of the machine learning process. To keep this post brief, I'm going to go through just a few feature engineering and selection steps.
+Feature engineering and selection is one of the most time consuming parts of the machine learning process. To keep this post brief, I'm going to go through just a few feature engineering steps.
 
-First, we split the data into [training and testing](https://en.wikipedia.org/wiki/Training,_test,_and_validation_sets) sets. After this, I extract only the numeric predictor variables for the model, and then add squared terms as well as interactions between each of the first order effects. These two steps transforms the predictor matrix from four columns into fourteen, more than tripling the original size. Finally, we use the `preProcess` function from the [__`caret`__](https://topepo.github.io/caret/index.html) package to center and scale each numeric variable so that it has zero mean and unit variance.
+First, we split the data into [training and testing](https://en.wikipedia.org/wiki/Training,_test,_and_validation_sets) sets. After this, I extract only the numeric predictor variables for the model, and then add squared terms as well as interactions between each of the first order effects. These two steps transform the predictor matrix from four columns into fourteen. Finally, we use the `preProcess` function from the [__`caret`__](https://topepo.github.io/caret/index.html) package to center and scale each variable so that it has mean = 0 and variance = 1.
 
 ```{r}
 set.seed(123)
@@ -149,7 +147,7 @@ iris_y_train <- as.factor(as.numeric(iris_train$Species == 'setosa'))
 iris_y_test <- as.factor(iris_test$Species == 'setosa')
 ```
 
-The data augmentation steps I went through only created numeric variables, but often times we'll use decision trees or similar techniques to create categorical variables from numeric. We use those methods when it's unnecessary to retain the continuous nature of a numeric variable (often the case with age or physiological measurements like height or weight).
+The data augmentation steps I went through created numeric variables, but we could use decision trees or similar techniques to create categorical variables from numeric. We use those methods when it's unnecessary to retain the continuous nature of a numeric variable (often the case with age or physiological measurements like height or weight).
 
 After we've gone through the feature engineering step, we can think about which variables we'll actually want to use in our model. There can be considerable back-and-forth between feature engineering and feature selection, just like iterating on a recipe may involve different ingredients and different ways of preparing those ingredients.
 
@@ -167,16 +165,16 @@ iris_rfe <- rfe(x = iris_X_train_cs,
 iris_rfe$optVariables
 ```
 
-The procedure we used for variable selection is pretty straightforward, and suggested an interaction between the petal length and petal width variables, and petal length squared. It's generally a bad idea to include higher ordered terms without also including the lower order terms, so our final model will have three variables: petal width, petal length, and petal width * petal length interaction.
+The procedure we used for variable selection suggested an interaction between the petal length and petal width variables, and petal length squared. It's usually a bad idea to include higher ordered terms without also including the lower order terms, so our final model will have three variables: petal width, petal length, and petal width * petal length interaction.
 
 
 ## Cooking Methods
 
 In elastic net regression, we have two parameters to select: $\alpha$ and $\lambda$. $\alpha$ controls the weight we give to the $L_1$ and $L_2$ penalties (with $\alpha$ being placed on the $L_1$ norm, and $1-\alpha$ being placed on the $L_2$ norm). Putting all of the weight on $L_2$ norm is better known as [Tikhonov regularization or ridge regression](https://en.wikipedia.org/wiki/Tikhonov_regularization). I've already made my choice of $\alpha$ for this post, so we don't have to tune it.
 
-The other parameter we need to tune is $\lambda$, which controls the overall strength of the penalty we'll place on the $L_2$ norm of the coefficients. A higher $\lambda$ value will "shrink" the model's coefficients, whereas a smaller $\lambda$ value will result in a model more similar to the standard unregularized logistic regression fit.
+The other parameter we need to tune is $\lambda$, which controls the strength of the penalty we'll place on the $L_2$ norm of the coefficients. A higher $\lambda$ value will "shrink" the model's coefficients, whereas a smaller $\lambda$ value will result in a model more similar to the standard unregularized logistic regression fit.
 
-As we'll see, the `cv.glmnet` function allows us to use cross-validation to tune $\lambda$. 
+The `cv.glmnet` function allows us to use cross-validation to tune $\lambda$. 
 
 ```{r}
 vv <- c("Petal.Width", "Petal.Length", "Petal.Length:Petal.Width")
@@ -187,40 +185,33 @@ iris_X_test_cs_sub <- iris_X_test_cs[, colnames(iris_X_test_cs) %in% vv]
 
 
 ```{r}
-cv_glm1 <- cv.glmnet(x = iris_X_train_cs_sub,
-                     y = iris_y_train,
-                     alpha = 0,
-                     family = 'binomial',
+cv_glm1 <- cv.glmnet(x = iris_X_train_cs_sub, y = iris_y_train,
+                     alpha = 0, family = 'binomial',
                      nfolds = length(iris_y_train) - 1,# LOOCV
-                     standardize = FALSE,
-                     intercept = FALSE) 
+                     standardize = FALSE, intercept = FALSE) 
 
 lambda_1se_1 <- cv_glm1$lambda.1se # store "best" lambda for now
 
 plot(cv_glm1)
 ```
 
-It looks like we can explore $\lambda$ a bit more, and at the same time improve our model fit.
+We can explore $\lambda$ a bit more to improve the model fit.
 
 ```{r}
-cv_glm2 <- cv.glmnet(x = iris_X_train_cs_sub,
-                     y = iris_y_train,
-                     alpha = 0,
-                     lambda = exp(seq(-10, log(lambda_1se_1), length.out = 500)),
-                     family = 'binomial',
-                     nfolds = length(iris_y_train) - 1,# LOOCV
-                     standardize = FALSE,
-                     intercept = FALSE)
+cv_glm2 <- cv.glmnet(x = iris_X_train_cs_sub, y = iris_y_train,
+                     alpha = 0, lambda = exp(seq(-10, log(lambda_1se_1), length.out = 500)),
+                     family = 'binomial', nfolds = length(iris_y_train) - 1,# LOOCV
+                     standardize = FALSE, intercept = FALSE)
 
 lambda_2 <- exp(-6.5)
 plot(cv_glm2)
 ```
 
-Cross-validation suggests a rather small value of $\lambda$, indicating that the model's fit doesn't improve with a high degree of regularization. In the next section, we'll use two values of $\lambda$ to fit the model ($\lambda_1$ = `r lambda_1se_1`, $\lambda_2$ = `r lambda_2`), and then investigate the results. 
+Cross-validation suggests a rather small value of $\lambda$, indicating that the model's fit doesn't improve with a high degree of regularization. In the next section, we'll use two values of $\lambda$ to fit the model ($\lambda_1$ = `r round(lambda_1se_1, 4)`, $\lambda_2$ = `r round(lambda_2, 4)`), and then investigate the results. 
 
 ## Tasting the soup
 
-After we fit the model (or make the soup), we have to determine how good it is. For this example, I'm going to use a simple method for determining the classification accuracy. Basically, I'm just going to check the % of time the classifier got the species correct. Using this metric implies that we're treating false positive and false negatives as equally bad errors. In most real world situations, this is not the case. 
+After we fit the model (or make the soup), we have to determine how good it is. For this example, I'm going to use a simple method for determining the classification accuracy and check the % of time the classifier got the species correct. Using this metric implies that we're treating false positive and false negatives as equally bad errors. In most real world situations, this is not the case. 
 
 ```{r}
 # naive classification accuracy
@@ -230,20 +221,19 @@ class_acc <- function(preds, labels, thresh = 0.5){
 }
 ```
 
-In addition to the two models fit using regularization, I'm also going to fit models using _all_ of the variables we've created, as well as a simple model with only the original variables from the iris data set.
+In addition to the two models fit using regularization, I'm going to fit an unregularized model with the selected features along with an unregularized model with only the variables that were present in the original dataset.
 
 ```{r}
+# regularized models
 ridge_1 <- glmnet(x = iris_X_train_cs_sub, y = iris_y_train,
                   family = 'binomial', lambda = lambda_1se_1, alpha = 0,
                   standardize = FALSE, intercept = FALSE)
-
 ridge_2 <- glmnet(x = iris_X_train_cs_sub, y = iris_y_train,
                   family = 'binomial', lambda = lambda_2, alpha = 0,
                   standardize = FALSE, intercept = FALSE)
-
+# unregularized
 glm1 <- glm(iris_y_train ~ -1 + ., data = data.frame(iris_X_train_cs_sub), 
             family = 'binomial')
-
 glm2 <- glm(iris_y_train ~ -1 + Sepal.Length+Sepal.Width+Petal.Length+Petal.Width,
             data = data.frame(iris_X_train_cs), 
             family = 'binomial') 
@@ -282,9 +272,9 @@ When we compare making a soup to machine learning, we get a fairly simple and un
   - they aren't trying to make too difficult of a dish
   - they're an experienced cook
   
-These situations have clear parallels to machine learning (maybe you got lucky and your prediction task is fairly easy or maybe all you need is a simple model or maybe you're an experience data scientist).
+These situations have clear parallels to machine learning. Maybe you got lucky and your prediction task is fairly easy or maybe all you need is a simple model or maybe you're an experienced data scientist.
 
-I feel like this analogy is a pretty straightforward way to explain machine learning to a broad audience of people that are interested in the topic. I found a [similar article](https://www.becomingadatascientist.com/2017/07/17/introductory-machine-learning-terminology-with-food/) which discussed ideas that are related to the ones I talked about in my post. If you know of any other posts with similar sentiments, I hope you'll share it with me!
+I feel like this analogy is a pretty straightforward way to explain machine learning to a broad audience of people that are interested in the topic. I found a [similar article](https://www.becomingadatascientist.com/2017/07/17/introductory-machine-learning-terminology-with-food/) which discussed ideas that are related to the ones I talked about in my post. If you know of any other posts with similar sentiments, I hope you'll share them with me!
 
 Thanks for reading my post and leave a comment below if you have any thoughts or feedback!
 
