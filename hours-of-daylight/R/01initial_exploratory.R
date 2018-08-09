@@ -28,14 +28,14 @@ get_daylight_time <- function(d){
   
 }
 
-get_daylight_data <- function(data){
+get_daylight_data <- function(data, year = 2017){
   
   data[20:50] %>%
     paste(collapse = '\n') %>%
     read_fwf(col_positions = fwf_widths(c(8, rep(9, 11), NA))) %>%
     set_names(c('day', month.abb)) %>%
     gather(month, daylight, -day) %>%
-    mutate(date = as.Date(paste0(day, month,'2017'),
+    mutate(date = as.Date(paste0(day, month, year),
                           '%d%b%Y')) %>%
     filter(!is.na(date)) %>%
     mutate(daylight_duration = get_daylight_time(daylight))
@@ -52,23 +52,24 @@ states_capital <- read_csv("https://gist.githubusercontent.com/mbostock/9535021/
   inner_join(data_frame(name = state.name,
                         abbr = state.abb))
 ## all daylight data (initially just a list of character vectors)
-full_data <- mapply(x = states_capital$abbr, y = states_capital$description,
-                    FUN = function(x, y){
-                      readLines(data_url(state = x,place = y))
-                      },
-                    SIMPLIFY = FALSE)
+full_data_2017 <- mapply(x = states_capital$abbr, 
+                         y = states_capital$description,
+                         FUN = function(x, y){
+                           readLines(data_url(state = x,place = y))
+                           },
+                         SIMPLIFY = FALSE)
 # add time zones onto state data                  
-time_zone_data <- stack(lapply(full_data, get_time_zone)) %>%
+time_zone_data <- stack(lapply(full_data_2017, get_time_zone)) %>%
   select('time_zone' = values,
          'abbr' = ind) %>%
   inner_join(states_capital)
 # get daylight data for each state
-daylight_list <- lapply(full_data, get_daylight_data)
+daylight_list <- lapply(full_data_2017, get_daylight_data)
 
 full_daylight_data <- do.call('rbind',
                               mapply(names(daylight_list), 
                                      daylight_list, 
                                      FUN = function(x, y) 
                                        y %>% 
-                                       mutate(state = x), 
+                                        mutate(state = x), 
                                      SIMPLIFY = FALSE))
