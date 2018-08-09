@@ -1,4 +1,6 @@
 library(tidyverse)
+theme_set(theme_bw())
+
 
 remove_empty_strings <- function(x) x[x != '']
 
@@ -78,3 +80,31 @@ full_daylight_data <- do.call('rbind',
 write_csv(time_zone_data, "..//data//time_zone_data.csv")
 
 write_csv(full_daylight_data, "..//data//full_daylight_data.csv")
+
+
+full_daylight_data2 <- full_daylight_data %>%
+  filter(! state %in% c('AK', 'HI')) %>%
+  mutate(scale_daylight = scale(daylight_duration)) 
+
+full_daylight_data2 %>%
+  ggplot(aes(date, reorder(state, scale_daylight), fill = scale_daylight))+
+  geom_raster()+
+  scale_fill_gradient2()
+
+total_daylight_by_state <- full_daylight_data2 %>%
+  group_by(state) %>%
+  summarise(total_daylight_hours = sum(daylight_duration)) %>%
+  inner_join(time_zone_data, by = c('state' = 'abbr'))
+
+total_daylight_by_state %>%
+  ggplot(aes(reorder(state, total_daylight_hours), total_daylight_hours))+
+  geom_point()+
+  coord_flip()
+
+
+
+map_data('state') %>%filter(! region %in% c('alaska', 'hawaii')) %>%
+  inner_join(data_frame(region = tolower(state.name), state = state.abb)) %>%
+  inner_join(total_daylight_by_state) %>%  
+  ggplot(aes(long, lat, fill = total_daylight_hours, group = group))+
+  geom_polygon()
