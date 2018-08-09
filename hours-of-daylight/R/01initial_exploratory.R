@@ -73,3 +73,8 @@ full_daylight_data <- do.call('rbind',
                                        y %>% 
                                         mutate(state = x), 
                                      SIMPLIFY = FALSE))
+
+
+write_csv(time_zone_data, "..//data//time_zone_data.csv")
+
+write_csv(full_daylight_data, "..//data//full_daylight_data.csv")
