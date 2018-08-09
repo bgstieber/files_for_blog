@@ -1,7 +1,5 @@
 library(tidyverse)
 
-
-
 remove_empty_strings <- function(x) x[x != '']
 
 data_url <- function(year=2017, state, place){
@@ -19,14 +17,28 @@ get_time_zone <- function(data){
     .[2]
 }
 
+get_daylight_time <- function(d){
+  
+  d1 <- d %>%
+    as.character() %>%
+    strsplit(":") 
+  
+  
+  sapply(d1, FUN = function(x) 60 * as.numeric(x[1]) + as.numeric(x[2]))
+  
+}
 
-naive_read <- function(year = 2017, state, place){
+get_daylight_data <- function(data){
   
-  dat <- read_fwf(data_url(year, state, place),
-                  skip = 19,
-                  col_positions = fwf_widths(c(8, rep(9, 12))))
-  
-  setNames(dat, c('day', month.abb))
+  data[20:50] %>%
+    paste(collapse = '\n') %>%
+    read_fwf(col_positions = fwf_widths(c(8, rep(9, 11), NA))) %>%
+    set_names(c('day', month.abb)) %>%
+    gather(month, daylight, -day) %>%
+    mutate(date = as.Date(paste0(day, month,'2017'),
+                          '%d%b%Y')) %>%
+    filter(!is.na(date)) %>%
+    mutate(daylight_duration = get_daylight_time(daylight))
   
 }
 
@@ -40,8 +52,7 @@ states_capital <- read_csv("https://gist.githubusercontent.com/mbostock/9535021/
   inner_join(data_frame(name = state.name,
                         abbr = state.abb))
 ## all daylight data (initially just a list of character vectors)
-full_data <- mapply(x = states_capital$abbr,
-                    y = states_capital$description,
+full_data <- mapply(x = states_capital$abbr, y = states_capital$description,
                     FUN = function(x, y){
                       readLines(data_url(state = x,place = y))
                       },
@@ -51,3 +62,13 @@ time_zone_data <- stack(lapply(full_data, get_time_zone)) %>%
   select('time_zone' = values,
          'abbr' = ind) %>%
   inner_join(states_capital)
+# get daylight data for each state
+daylight_list <- lapply(full_data, get_daylight_data)
+
+full_daylight_data <- do.call('rbind',
+                              mapply(names(daylight_list), 
+                                     daylight_list, 
+                                     FUN = function(x, y) 
+                                       y %>% 
+                                       mutate(state = x), 
+                                     SIMPLIFY = FALSE))
