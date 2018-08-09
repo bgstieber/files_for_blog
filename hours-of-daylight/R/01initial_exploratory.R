@@ -107,4 +107,4 @@ map_data('state') %>%filter(! region %in% c('alaska', 'hawaii')) %>%
   inner_join(data_frame(region = tolower(state.name), state = state.abb)) %>%
   inner_join(total_daylight_by_state) %>%  
   ggplot(aes(long, lat, fill = total_daylight_hours, group = group))+
-  geom_polygon()
+  geom_polygon(colour = 'black')
