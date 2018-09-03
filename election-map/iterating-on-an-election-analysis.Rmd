@@ -1,0 +1,34 @@
+---
+title: "Iterating on an Election Analysis"
+author: "Brad Stieber"
+date: "September 3, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE,
+                      error = FALSE)
+```
+
+Jake Low wrote a [really interesting piece](https://beta.observablehq.com/@jake-low/how-well-does-population-density-predict-u-s-voting-outcome) that presented a few data visualizations that went beyond the typical [2016 election maps](https://www.nytimes.com/interactive/2018/upshot/election-2016-voting-precinct-maps.html) we've all gotten used to seeing. 
+
+
+```{r}
+library(tidyverse)
+library(tidycensus)
+```
+
+
+```{r}
+results_16 <- read_csv("https://raw.githubusercontent.com/tonmcg/County_Level_Election_Results_12-16/master/2016_US_County_Level_Presidential_Results.csv") %>%
+  filter(! state_abbr %in% c('AK', 'HI'))
+```
+
+```{r}
+try_edu <- get_acs('county', 
+                   c(pop_25 = 'B15003_001', 
+                     edu = 'B16010_028', 
+                     inc = 'B21004_001'))
+```
+ 
+ 
