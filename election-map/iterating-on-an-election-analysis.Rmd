@@ -12,23 +12,65 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE,
 
 Jake Low wrote a [really interesting piece](https://beta.observablehq.com/@jake-low/how-well-does-population-density-predict-u-s-voting-outcome) that presented a few data visualizations that went beyond the typical [2016 election maps](https://www.nytimes.com/interactive/2018/upshot/election-2016-voting-precinct-maps.html) we've all gotten used to seeing. 
 
+I liked a lot of things about Jake's posts, here are three I was particularly fond of:
+
+  - His color palette choices
+      - Each color palette that was used had solid perceptual properties and made sense for the data being visualized (i.e. diverging versus sequential)
+  - He made residuals from a model interesting by visualizing _and_ interpretting them
+  - He explained the usage of a log-scale transformation in an intuitive way, putting it in terms of the data set being used for the analysis.
+      - This can be something data scientists and analysts struggle with
 
 ```{r}
 library(tidyverse)
 library(tidycensus)
 ```
 
+## Getting the Data
+
+I got election results from [this GitHub repository](https://github.com/tonmcg/County_Level_Election_Results_12-16). I plan on making a few heatmaps with this data, so I'm only including information from the [contiguous United States](https://en.wikipedia.org/wiki/Contiguous_United_States). There's also an issue I don't fully understand with Alaska vote reporting.
 
 ```{r}
-results_16 <- read_csv("https://raw.githubusercontent.com/tonmcg/County_Level_Election_Results_12-16/master/2016_US_County_Level_Presidential_Results.csv") %>%
-  filter(! state_abbr %in% c('AK', 'HI'))
+github_raw <- "https://raw.githubusercontent.com/"
+repo <- "tonmcg/County_Level_Election_Results_12-16/master/"
+data_file <- "2016_US_County_Level_Presidential_Results.csv"
+results_16 <- read_csv(paste0(github_raw, repo, data_file)) %>%
+  filter(! state_abbr %in% c('AK', 'HI')) %>%
+  select(-X1)
 ```
+
+To get some extra information about the counties I'll use the __`tidycensus`__(https://github.com/walkerke/tidycensus) package. For each county, I'm pulling information about the population over 25, the number of people over 25 with some college or associate's degree, and the median income.
 
 ```{r}
 try_edu <- get_acs('county', 
                    c(pop_25 = 'B15003_001', 
                      edu = 'B16010_028', 
-                     inc = 'B21004_001'))
+                     inc = 'B21004_001')) %>%
+  select(-moe) %>%
+  spread(variable, estimate)
 ```
  
- 
+Finally, I pulled in information about population density from the [Census American FactFinder](https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk). For aspiring data scientists, it's important to remember that if you _think_ the U.S. government collects a certain type of data, they probably do. It's also important to remember that the structure of the data will create such a headache that you'll start to question if it's even worth it. They've actually gotten a lot better, but I can remember times during undergrad when I spent _hours_ reshaping BLS data in Excel. 
+
+Once I downloaded that data, I threw it into a [GitHub repo](https://github.com/bgstieber/files_for_blog/tree/master/election-map/Data).
+
+```{r}
+repo <- "bgstieber/files_for_blog/master/election-map/"
+data_file <- "Data/pop_density_by_county.csv"
+pop_density <- read_csv(paste0(github_raw, repo, data_file), skip = 1) %>%
+  select(geography = `Geographic area`,
+         FIPS = `Target Geo Id2`,
+         'population_density' = `Density per square mile of land area - Population`)
+  
+```
+
+## Recreating Jake's Analysis
+
+First, we're going to make the 2016 election map.
+
+```{r}
+
+```
+
+
+## Extending Jake's Analysis
+

@@ -125,9 +125,28 @@ $(document).ready(function () {
 </div>
 
 
-<p>I saw this tweet from Mike Bostock</p>
-{{% tweet "1035537644485107712" %}}
-{{% tweet "930492543187513345" %}}
+<p>Jake Low wrote a <a href="https://beta.observablehq.com/@jake-low/how-well-does-population-density-predict-u-s-voting-outcome">really interesting piece</a> that presented a few data visualizations that went beyond the typical <a href="https://www.nytimes.com/interactive/2018/upshot/election-2016-voting-precinct-maps.html">2016 election maps</a> we’ve all gotten used to seeing.</p>
+<pre class="r"><code>library(tidyverse)
+library(tidycensus)</code></pre>
+<div id="getting-the-data" class="section level2">
+<h2>Getting the Data</h2>
+<p>I got election results from <a href="https://github.com/tonmcg/County_Level_Election_Results_12-16">this GitHub repository</a>. I plan on making a few heatmaps with this data, so I’m only including information from the <a href="https://en.wikipedia.org/wiki/Contiguous_United_States">contiguous United States</a>. There’s also an issue I don’t fully understand with Alaska vote reporting.</p>
+<pre class="r"><code>results_16 &lt;- read_csv(&quot;https://raw.githubusercontent.com/tonmcg/County_Level_Election_Results_12-16/master/2016_US_County_Level_Presidential_Results.csv&quot;) %&gt;%
+  filter(! state_abbr %in% c('AK', 'HI'))</code></pre>
+<p>To get some extra information about the counties I’ll use the <strong><code>tidycensus</code></strong>(<a href="https://github.com/walkerke/tidycensus" class="uri">https://github.com/walkerke/tidycensus</a>) package. For each county, I’m pulling information about the population over 25, the number of people over 25 with some college or associate’s degree, and the median income.</p>
+<pre class="r"><code>try_edu &lt;- get_acs('county', 
+                   c(pop_25 = 'B15003_001', 
+                     edu = 'B16010_028', 
+                     inc = 'B21004_001')) %&gt;%
+  select(-moe) %&gt;%
+  spread(variable, estimate)</code></pre>
+<p>Finally, I pulled in information about population density from the <a href="https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk">Census American FactFinder</a>. For aspiring data scientists, it’s important to remember that if you <em>think</em> the U.S. government collects a certain type of data, they probably do. It’s also important to remember that the structure of the data will create such a headache that you’ll start to question if it’s even worth it. They’ve actually gotten a lot better, but I can remember times during undergrad when I spent <em>hours</em> reshaping BLS data in Excel.</p>
+<p>Once I downloaded that data, I threw it into a <a href="https://github.com/bgstieber/files_for_blog/tree/master/election-map/Data">GitHub repo</a>.</p>
+<pre class="r"><code>pop_density &lt;- read_csv(&quot;https://raw.githubusercontent.com/bgstieber/files_for_blog/master/election-map/Data/pop_density_by_county.csv&quot;, skip = 1) %&gt;%
+  select(geography = `Geographic area`,
+         FIPS = `Target Geo Id2`,
+         'population_density' = `Density per square mile of land area - Population`)</code></pre>
+</div>
 
 
 
