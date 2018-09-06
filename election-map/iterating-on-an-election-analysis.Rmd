@@ -28,9 +28,20 @@ library(scales)
 library(maps)
 ```
 
+In this post, I'm going to replicate Jake's analysis and then extend it a bit, by fitting a model which is a little more complicated than the one is his post.
+
+In Jake's post, he used d3.js to do most of the work. As usual, I'll be using `R`.
+
 ## Getting the Data
 
-I got election results from [this GitHub repository](https://github.com/tonmcg/County_Level_Election_Results_12-16). I plan on making a few heatmaps with this data, so I'm only including information from the [contiguous United States](https://en.wikipedia.org/wiki/Contiguous_United_States). There's also an issue I don't fully understand with Alaska vote reporting.
+For this analysis, we'll need a few different data sets, all measured at the county level:
+
+  - 2016 election results
+  - Population density
+  - Educational information (how many people over 25 have some college or associate's degree)
+  - Median income
+
+I got election results from [this GitHub repository](https://github.com/tonmcg/County_Level_Election_Results_12-16). I plan on making a few heatmaps with this data, so I'm only including information from the [contiguous United States](https://en.wikipedia.org/wiki/Contiguous_United_States). There's also an issue I don't fully understand with Alaska vote reporting, where it seems as though county-level reporting doesn't exist.
 
 ```{r}
 github_raw <- "https://raw.githubusercontent.com/"
@@ -38,7 +49,12 @@ repo <- "tonmcg/County_Level_Election_Results_12-16/master/"
 data_file <- "2016_US_County_Level_Presidential_Results.csv"
 results_16 <- read_csv(paste0(github_raw, repo, data_file)) %>%
   filter(! state_abbr %in% c('AK', 'HI')) %>%
-  select(-X1)
+  select(-X1) %>%
+  mutate(total_votes = votes_dem + votes_gop,
+         trump_ratio_clinton = 
+           (votes_gop/total_votes) / (votes_dem/total_votes),
+         two_party_ratio = (votes_dem) / (votes_dem + votes_gop)) %>%
+  mutate(log_trump_ratio = log(trump_ratio_clinton)) 
 ```
 
 To get some extra information about the counties I'll use the __`tidycensus`__(https://github.com/walkerke/tidycensus) package. For each county, I'm pulling information about the population over 25, the number of people over 25 with some college or associate's degree, and the median income.
@@ -60,10 +76,11 @@ Once I downloaded that data, I threw it into a [GitHub repo](https://github.com/
 repo <- "bgstieber/files_for_blog/master/election-map/"
 data_file <- "Data/pop_density_by_county.csv"
 pop_density <- read_csv(paste0(github_raw, repo, data_file), skip = 1) %>%
+  mutate(population = as.numeric(Population)) %>%
   select(geography = `Geographic area`,
          FIPS = `Target Geo Id2`,
+         population,
          'population_density' = `Density per square mile of land area - Population`)
-  
 ```
 
 ## Recreating Jake's Analysis
@@ -87,16 +104,18 @@ county_map_with_fips <- county.fips %>%
 
 election_results <- county_map_with_fips %>%
     inner_join(select(results_16, combined_fips, state_abbr, 
-                      county_name, votes_dem, votes_gop),
+                      county_name, log_trump_ratio, two_party_ratio),
                by = c('fips' = 'combined_fips'))
+
 ```
+
+We'll be making the map using `ggplot2`. You might notice some funky stuff going on with `scale_fill_gradientn`. To make the map more visually salient, I've played around a bit with scaling the colors.
+
+
 ```{r fig.width = 8, fig.height=6}
 map_labels <- c('1:16', '1:3', '1:1', '3:1', '16:1')
+
 election_results %>%
-    mutate(total_votes = votes_dem + votes_gop,
-           trump_ratio_clinton = 
-               (votes_gop/total_votes) / (votes_dem/total_votes)) %>%
-    mutate(log_trump_ratio = log(trump_ratio_clinton)) %>%
     ggplot(aes(x = long, y = lat, group = group,
                fill = log_trump_ratio))+
     geom_polygon(colour = rgb(0.9,0.9,0.9, .1))+
@@ -138,6 +157,24 @@ county_map_with_fips %>%
                                    direction = 'horizontal'))
 ```
 
+Finally, we're going to try to predict the 2016 election results using population density. 
+
+First, let's examine a scatter plot of the data.
+
+```{r}
+results_and_pop_density <- results_16 %>% 
+  inner_join(pop_density, by = c('combined_fips' = 'FIPS')) %>%
+  mutate(two_party_ratio = (votes_dem) / (votes_dem + votes_gop))
+
+results_and_pop_density %>%
+    ggplot(aes(population_density, two_party_ratio))+
+    geom_point(aes(size = population),
+               shape = 21, colour = 'dodgerblue3')+
+    scale_x_continuous(trans = log_trans(2),
+                       name = 'Population Density per Square Mile')+
+    scale_size_continuous(trans = sqrt_trans())+
+    ylab('Two Party Vote Ratio (> 0.5 favors Clinton, < 0.5 favors Trump)')
+```
 
 
 ## Extending Jake's Analysis

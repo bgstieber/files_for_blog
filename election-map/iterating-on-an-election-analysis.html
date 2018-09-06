@@ -143,15 +143,28 @@ library(tidycensus)
 library(ggmap)
 library(scales)
 library(maps)</code></pre>
+<p>In this post, I’m going to replicate Jake’s analysis and then extend it a bit, by fitting a model which is a little more complicated than the one is his post.</p>
+<p>In Jake’s post, he used d3.js to do most of the work. As usual, I’ll be using <code>R</code>.</p>
 <div id="getting-the-data" class="section level2">
 <h2>Getting the Data</h2>
-<p>I got election results from <a href="https://github.com/tonmcg/County_Level_Election_Results_12-16">this GitHub repository</a>. I plan on making a few heatmaps with this data, so I’m only including information from the <a href="https://en.wikipedia.org/wiki/Contiguous_United_States">contiguous United States</a>. There’s also an issue I don’t fully understand with Alaska vote reporting.</p>
+<p>For this analysis, we’ll need a few different data sets, all measured at the county level:</p>
+<ul>
+<li>2016 election results</li>
+<li>Population density</li>
+<li>Educational information (how many people over 25 have some college or associate’s degree)</li>
+<li>Median income</li>
+</ul>
+<p>I got election results from <a href="https://github.com/tonmcg/County_Level_Election_Results_12-16">this GitHub repository</a>. I plan on making a few heatmaps with this data, so I’m only including information from the <a href="https://en.wikipedia.org/wiki/Contiguous_United_States">contiguous United States</a>. There’s also an issue I don’t fully understand with Alaska vote reporting, where it seems as though county-level reporting doesn’t exist.</p>
 <pre class="r"><code>github_raw &lt;- &quot;https://raw.githubusercontent.com/&quot;
 repo &lt;- &quot;tonmcg/County_Level_Election_Results_12-16/master/&quot;
 data_file &lt;- &quot;2016_US_County_Level_Presidential_Results.csv&quot;
 results_16 &lt;- read_csv(paste0(github_raw, repo, data_file)) %&gt;%
   filter(! state_abbr %in% c('AK', 'HI')) %&gt;%
-  select(-X1)</code></pre>
+  select(-X1) %&gt;%
+  mutate(total_votes = votes_dem + votes_gop,
+         trump_ratio_clinton = 
+           (votes_gop/total_votes) / (votes_dem/total_votes)) %&gt;%
+  mutate(log_trump_ratio = log(trump_ratio_clinton)) </code></pre>
 <p>To get some extra information about the counties I’ll use the <strong><code>tidycensus</code></strong>(<a href="https://github.com/walkerke/tidycensus" class="uri">https://github.com/walkerke/tidycensus</a>) package. For each county, I’m pulling information about the population over 25, the number of people over 25 with some college or associate’s degree, and the median income.</p>
 <pre class="r"><code>try_edu &lt;- get_acs('county', 
                    c(pop_25 = 'B15003_001', 
@@ -187,14 +200,12 @@ county_map_with_fips &lt;- county.fips %&gt;%
 
 election_results &lt;- county_map_with_fips %&gt;%
     inner_join(select(results_16, combined_fips, state_abbr, 
-                      county_name, votes_dem, votes_gop),
+                      county_name, log_trump_ratio),
                by = c('fips' = 'combined_fips'))</code></pre>
+<p>We’ll be making the map using <code>ggplot2</code>. You might notice some funky stuff going on with <code>scale_fill_gradientn</code>. To make the map more visually salient, I’ve played around a bit with scaling the colors.</p>
 <pre class="r"><code>map_labels &lt;- c('1:16', '1:3', '1:1', '3:1', '16:1')
+
 election_results %&gt;%
-    mutate(total_votes = votes_dem + votes_gop,
-           trump_ratio_clinton = 
-               (votes_gop/total_votes) / (votes_dem/total_votes)) %&gt;%
-    mutate(log_trump_ratio = log(trump_ratio_clinton)) %&gt;%
     ggplot(aes(x = long, y = lat, group = group,
                fill = log_trump_ratio))+
     geom_polygon(colour = rgb(0.9,0.9,0.9, .1))+
