@@ -12,13 +12,18 @@ knitr::opts_chunk$set(message = FALSE, warning = FALSE,
 
 Jake Low wrote a [really interesting piece](https://beta.observablehq.com/@jake-low/how-well-does-population-density-predict-u-s-voting-outcome) that presented a few data visualizations that went beyond the typical [2016 election maps](https://www.nytimes.com/interactive/2018/upshot/election-2016-voting-precinct-maps.html) we've all gotten used to seeing. 
 
-I liked a lot of things about Jake's posts, here are three I was particularly fond of:
+I liked a lot of things about Jake's post, here are three I was particularly fond of:
 
   - His color palette choices
       - Each color palette that was used had solid perceptual properties and made sense for the data being visualized (i.e. diverging versus sequential)
-  - He made residuals from a model interesting by visualizing _and_ interpretting them
+  - He made residuals from a model interesting by visualizing _and_ interpreting them
   - He explained the usage of a log-scale transformation in an intuitive way, putting it in terms of the data set being used for the analysis.
-      - This can be something data scientists and analysts struggle with
+
+In this post, I'm going to replicate Jake's analysis and then extend it a bit, by fitting a model which is a little more complicated than the one is his post.
+
+In Jake's post, he used d3.js to do most of the work. As usual, I'll be using `R`.
+
+Since this is `R`, here are the packages I'll need:
 
 ```{r}
 library(tidyverse)
@@ -26,12 +31,11 @@ library(tidycensus)
 library(ggmap)
 library(scales)
 library(maps)
-theme_set(theme_bw())
 ```
 
-In this post, I'm going to replicate Jake's analysis and then extend it a bit, by fitting a model which is a little more complicated than the one is his post.
-
-In Jake's post, he used d3.js to do most of the work. As usual, I'll be using `R`.
+```{r echo = FALSE}
+theme_set(theme_bw())
+```
 
 ## Getting the Data
 
@@ -59,7 +63,6 @@ results_16 <- read_csv(paste0(github_raw, repo, data_file)) %>%
   mutate(log_trump_ratio = log(trump_ratio_clinton)) 
 ```
 
-
 To get some extra information about the counties I'll use the [__`tidycensus`__](https://github.com/walkerke/tidycensus) package. For each county, I'm pulling information about the population over 25, the number of people over 25 with some college or associate's degree, and the median income.
 
 ```{r}
@@ -71,7 +74,7 @@ census_data <- get_acs('county',
   spread(variable, estimate)
 ```
  
-Finally, I pulled in information about population density from the [Census American FactFinder](https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk). For aspiring data scientists, it's important to remember that if you _think_ the U.S. government collects a certain type of data, they probably do. It's also important to remember that the structure of the data will create such a headache that you'll start to question if it's even worth it. I being slightly hyperbolic, as they've gotten a lot better, but I can remember times during undergrad when I spent _hours_ reshaping BLS data in Excel. 
+Finally, I pulled in information about population density from the [Census American FactFinder](https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk). For aspiring data scientists, it's important to remember that if you _think_ the U.S. government collects a certain type of data, they probably do. It's also important to remember that the structure of the data will create such a headache that you'll start to question if it's even worth it. I'm being just a bit hyperbolic, as they've gotten a lot better, but I can remember times during undergrad when I spent _hours_ reshaping BLS data in Excel. 
 
 Once I downloaded that data, I threw it into a [GitHub repo](https://github.com/bgstieber/files_for_blog/tree/master/election-map/Data).
 
@@ -114,9 +117,9 @@ election_results <- county_map_with_fips %>%
 
 ```
 
-I'll be making all of the maps in this post using `ggplot2`. I've removed the code from this post, but if you look on my GitHub, you might notice some funky stuff going on with `scale_fill_gradientn`. To make the map more visually salient, I've played around a bit with scaling the colors.
+I'll be making all of the maps in this post using `ggplot2`. I've removed the code from this post, but if you look on my GitHub, you'll notice some funky stuff going on with `scale_fill_gradientn`. To make the map more visually salient, I've played around a bit with how the colors are scaled.
 
-Areas that are red voted more for Trump, and areas that are blue voted more for Clinton.
+Counties that are red voted more for Trump, and counties that are blue voted more for Clinton.
 
 ```{r fig.width=9, fig.height=7, echo = FALSE}
 election_results %>%
@@ -137,7 +140,8 @@ election_results %>%
     xlab('')+ylab('')+
     guides(fill = guide_colorbar(barwidth = 10, 
                                  barheight = 1,
-                                 direction = 'horizontal'))
+                                 direction = 'horizontal'))+
+  ggtitle('2016 Presidential Election County Level Results')
 ```
 
 Then we'll take a look at population density. Again, I've hidden the code to make this map, but I've used `ggplot2` to visualize the data, and I used one of the [virdis](https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html) color palettes (which is what Jake did as well).
@@ -158,7 +162,8 @@ county_map_with_fips %>%
       xlab('')+ylab('')+
       guides(fill = guide_colorbar(barwidth = 10, 
                                    barheight = 1,
-                                   direction = 'horizontal'))
+                                   direction = 'horizontal'))+
+  ggtitle('Count Level Population Density')
 ```
 
 If you look between the two maps, you might get a sense of the correlation between population density and the 2016 election results.
@@ -187,7 +192,7 @@ results_and_pop_density %>%
             subtitle = 'Each dot is a county in the contiguous United States')
 ```
 
-We're going to fit a linear model which tries to predict the Two Party Vote Ratio $\frac{N_{clinton}}{N_{clinton}+N_{trump}} using population density. Calculating the two party ratio in the way we have means that a county over 0.5 favored Clinton.
+We're going to fit a linear model which tries to predict the Two Party Vote Ratio $\frac{N_{clinton}}{N_{clinton}+N_{trump}}$ using population density. Calculating the two party ratio in the way we have means that a county over 0.5 favored Clinton.
 
 ```{r }
 model1 <- lm(two_party_ratio ~ I(log(population_density)),
@@ -198,11 +203,11 @@ model1 <- lm(two_party_ratio ~ I(log(population_density)),
 results_and_pop_density$resid_model1 <- resid(model1)
 ```
 
-I'm hiding the code used to generate the map, but what we're visualizing isn't actually what the model predicted. Instead, __we're visualizing the residuals__, which tell us about how good or bad the model's prediction is. Calculating the residual is straightforward:
+I'm hiding the code used to generate the map, but what we're visualizing isn't actually what the model predicted. Instead, __we're visualizing the residuals__, which tell us about how good or bad the model's prediction is. Calculating residuals is straightforward (we just see how far off our prediction was from the actual observed value):
 
 $$\text{residual} = \text{actual proportion} - \text{predicted proportion}$$
 
-The larger the residual (in absolute value), the farther the model was from being right for that observation. Analyzing residuals and learning more about where your model is wrong can be one of the most fascinating parts of data science.
+The larger the residual (in absolute value), the farther the model was from being right for that observation. Analyzing residuals and learning more about where your model is wrong can be one of the most fascinating parts of statistics and data science.
 
 ```{r fig.width = 9, fig.height = 7, echo = FALSE}
 #make residual heatmap
@@ -226,19 +231,22 @@ results_and_pop_density_map %>%
     xlab('')+ylab('')+
       guides(fill = guide_colorbar(barwidth = 10, 
                                    barheight = 1,
-                                   direction = 'horizontal'))
+                                   direction = 'horizontal'))+
+  ggtitle('2016 Election Prediction Errors by County')
 
 ```
 
-In my opinion, the residuals from this simple model tell an even more interesting story than the election map above.
+In my opinion, visualizing the residuals from this simple model tells an even more interesting story than the election map above.
 
 For example, look at the southwest corner of Texas, which had much higher rates of Clinton favorability than the model predicted. Additionally, this map also shows Trump's appeal through the middle of the country. Much of the nation's "breadbasket" is colored pink, indicating that these counties favored Trump much more than the model predicted. 
 
 ## Extending Jake's Analysis
 
-My first thought after Jake's post was that the final model he fit was pretty simple. There are a few other variables it would be good to adjust for. What would the previous residual map look like if we controlled for factors like education, income, and age. I'm also going to add in the two party ratio from the 2012 election. That data came from [this GitHub repository](https://github.com/tonmcg/US_County_Level_Election_Results_08-16).
+My first thought after Jake's post was that the model he built was pretty simple. There are a few other variables it would be good to adjust for. 
 
-We're also going to deviate from the linear model we fit before. I think it would make more sense to fit a [logistic regression](https://stats.idre.ucla.edu/r/dae/logit-regression/) instead of a linear model, since the thing we want to predict is a proportion, not necessarily a continuous value.
+What would the previous residual map look like if we controlled for factors like education, income, and age? I'm also going to add in the two party ratio from the 2012 election (which came from [this GitHub repository](https://github.com/tonmcg/US_County_Level_Election_Results_08-16)).
+
+We're also going to deviate from the linear model we fit before. I think it would make more sense to fit a [logistic regression](https://stats.idre.ucla.edu/r/dae/logit-regression/) instead of a linear model, since the thing we want to predict is a proportion (it lives on the range $[0,1]$), not necessarily a continuous value (which lives on the range $(-\infty, \infty)$).
 
 I would hope that building a more robust model would make the residual map even more interesting. Let's see what happens!
 
@@ -263,16 +271,16 @@ results_pop_census <- results_and_pop_density %>%
 ```
 
 ```{r}
+# fit logistic regression
 model2 <- glm(cbind(votes_dem, votes_gop) ~ I(log(population_density))+
                 I(log(inc))+edu_pct + state_abbr + I(log1p(two_party_2012)),
               data = results_pop_census,
               family = 'binomial')
-
+# extract residuals
 results_pop_census$resid_model2 <- resid(model2, type = 'response')
-
+# join up to geographic data
 results_pop_census_map <- county_map_with_fips %>%
   inner_join(results_pop_census, by = c('fips' = 'combined_fips'))
-
 ```
 
 ```{r fig.width = 9, fig.height=7, echo = FALSE}
@@ -293,16 +301,17 @@ results_pop_census_map %>%
     xlab('')+ylab('')+
     guides(fill = guide_colorbar(barwidth = 10, 
                                  barheight = 1,
-                                 direction = 'horizontal'))
+                                 direction = 'horizontal'))+
+  ggtitle('2016 Election Prediction Errors by County - New Model')
 ```
 
-A few things are noticeably different between the two maps:
+A few things are __noticeably different__ between the two maps:
 
-  - The Midwest is considerably pinker than the previous map. Incorporating the 2012 election results demonstrates how conventional wisdom resulted in poor predictions.
-  - Adding variables to the model substantially improved the fit. So the range for our color palette is now much smaller.
-  - Parts of the Northeast are now much pinker as well. Trump's vow to bring back goal jobs resonated with this area of the country.
+  - The upper Midwest is considerably pinker than the previous map. Incorporating the 2012 election results demonstrates how conventional wisdom resulted in poor predictions for 2016.
+  - Adding variables to the model substantially improved the fit. Notice how the range for our color palette is now much smaller.
+  - Parts of the Northeast are now much pinker as well. Trump's vow to bring back coal jobs resonated with this area of the country.
 
-Some things stayed the same:
+Some things __stayed the same__:
 
   - The southwestern corner (i.e. border towns) of Texas are still green (Clinton performed better than the model would have predicted).
   - The "breadbasket" or "flyover" part of the country is still pink (Trump performed better than the model would have predicted).
@@ -316,21 +325,21 @@ top_n(results_pop_census, 10, resid_model2) %>%
     ggplot(aes(reorder(paste0(county_name, ', ', state_abbr), resid_model2), resid_model2))+
     geom_col(aes(fill = resid_model2), colour = 'black')+
     coord_flip()+
-scale_fill_gradientn(values = rescale(c(-.16, -.05, -.02, 0, .02, .05, .16)),
+    scale_fill_gradientn(values = rescale(c(-.16, -.05, -.02, 0, .02, .05, .16)),
                          colours = brewer_pal(palette = 'PiYG')(7),
                          limits = c(-.16, .16),
                          name = 'Prediction Error (pink underestimates Trump, green underestimates Clinton)')+
-  theme(legend.position = 'none')+
-  xlab('')+
-  ylab('Prediction Error (pink underestimated Trump, green underestimated Clinton)')+
-  ggtitle('Counties with the Highest Prediction Errors',
-          subtitle = 'Top 10 over- and under-predictions selected')
+    theme(legend.position = 'none')+
+    xlab('')+
+    ylab('Prediction Error (pink underestimated Trump, green underestimated Clinton)')+
+    ggtitle('Counties with the Highest Prediction Errors',
+            subtitle = 'Top 10 over- and under-predictions selected')
   
 ```
 
 In the above plot, we can see that three of the highest ten errors in favor of Clinton (the county performed better for Clinton than the model predicted) were from Texas. More analysis showed that five of the highest twenty five errors in favor of Clinton were in Texas. For Trump, Virginia, Kentucky, and Tennessee each had two counties in the top 10.
 
-Finally, we can look at how wrong our new-and-improved model was across states. There are a few ways to summarize residuals over states (we could even build another model), but I'll opt for the simplest route, and simply calculated the median error for each state.
+Finally, we can look at how wrong our new-and-improved model was across states. There are a few ways to summarize residuals over states (we could even build another model that predicted state results), but I'll opt for the simplest route, and calculate __the median error for each state__.
 
 ```{r echo = FALSE}
 state_data <- data_frame(state_abbr = state.abb, 
@@ -348,7 +357,7 @@ state_median <- results_pop_census %>%
 ```
 
 
-```{r echo = FALSE}
+```{r fig.width = 9, fig.height=7, echo = FALSE}
 state_median %>%
    inner_join(states_map) %>%
     ggplot(aes(x = long, y = lat, group = group, fill = median_residual))+
@@ -356,7 +365,7 @@ state_median %>%
     scale_fill_gradientn(values = rescale(c(-.031, -.005, 0, .005, .031)),
                          colours = brewer_pal(palette = 'PiYG')(5),
                          limits = c(-.031, .031),
-                         breaks = c(-.03, -.015, 0, .015, .03),
+                         breaks = c(-.02, 0, .02),
                          name = 'Prediction Error (pink underestimates Trump, green underestimates Clinton)')+
     theme_minimal()+
     theme(axis.text = element_blank(),
@@ -366,16 +375,17 @@ state_median %>%
     xlab('')+ylab('')+
     guides(fill = guide_colorbar(barwidth = 10, 
                                  barheight = 1,
-                                 direction = 'horizontal'))
+                                 direction = 'horizontal'))+
+  ggtitle('Median Prediction Error by State')
 ```
 
-Simply calculating the median prediction error tells an interesting story about the 2016 election. We see the midwest lighting up in pink, indicating areas where Trump out-performed the expectations of the model. We see areas out west where Clinton out-performed the expectations of the model. Finally, we see areas which are colored faintly, indicating that the model's median prediction error was fairly close to 0.
+Simply calculating the median prediction error tells an interesting story about the 2016 election. We see the Midwest lighting up in pink, indicating areas where Trump out-performed the expectations of the model. We see areas out west where Clinton out-performed the expectations of the model. Finally, we see areas which are colored faintly, indicating that the model's median prediction error was fairly close to 0.
 
 ## Conclusion
 
-I wanted to build on the great work of Jake and demonstrate how going a bit deeper with our model fitting can allow us to refine the data stories we tell. I also wanted to take his analysis (done in d3.js) and demonstrate how it could be replicated in R.
+I wanted to build on the great work of [Jake Low](https://beta.observablehq.com/@jake-low/how-well-does-population-density-predict-u-s-voting-outcome) and demonstrate how going a bit deeper with our model fitting can allow us to refine the data stories we tell. I also wanted to take his analysis (done in d3.js) and demonstrate how it could be replicated in `R`.
 
-I think the key takeaway from this post is that investigating the residuals from a model can result in some revelatory findings from a data analysis. Our models will [always be wrong](), but understanding and telling a story about _what_ they got wrong can make us feel a little better about that fact.
+I think the key takeaway from this post is that investigating the residuals from a model can result in some revelatory findings from a data analysis. Our models will [always be wrong](https://en.wikipedia.org/wiki/All_models_are_wrong), but understanding and telling a story about _what_ they got wrong can make us feel a little better about that fact.
 
 Thanks for reading through this post. If you want to look at the code for this analysis, you can find it [on my GitHub](https://github.com/bgstieber/files_for_blog/tree/master/election-map). Let me know what you thought about my post. Did any of the maps surprise you?
 
