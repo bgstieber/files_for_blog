@@ -74,9 +74,7 @@ census_data <- get_acs('county',
   spread(variable, estimate)
 ```
  
-Finally, I pulled in information about population density from the [Census American FactFinder](https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk). For aspiring data scientists, it's important to remember that if you _think_ the U.S. government collects a certain type of data, they probably do. It's also important to remember that the structure of the data will create such a headache that you'll start to question if it's even worth it. I'm being just a bit hyperbolic, as they've gotten a lot better, but I can remember times during undergrad when I spent _hours_ reshaping BLS data in Excel. 
-
-Once I downloaded that data, I threw it into a [GitHub repo](https://github.com/bgstieber/files_for_blog/tree/master/election-map/Data).
+Finally, I pulled in information about population density from the [Census American FactFinder](https://factfinder.census.gov/faces/tableservices/jsf/pages/productview.xhtml?src=bkmk). Once I downloaded that data, I threw it into a [GitHub repo](https://github.com/bgstieber/files_for_blog/tree/master/election-map/Data).
 
 ```{r echo = FALSE}
 repo <- "bgstieber/files_for_blog/master/election-map/"
@@ -166,7 +164,7 @@ county_map_with_fips %>%
   ggtitle('Count Level Population Density')
 ```
 
-If you look between the two maps, you might get a sense of the correlation between population density and the 2016 election results.
+If you look between the two maps, you might get a sense of the correlation between population density and the 2016 election results. It's reasonable to expect that we might be able to do a decent job at predicting election results just using population density.
 
 #### Predicting 2016 with Population Density
 
@@ -174,11 +172,14 @@ Finally, we're going to try to __predict the 2016 election results using populat
 
 First, let's examine a scatter plot of the data.
 
-```{r fig.width = 8, fig.height=6}
+```{r}
 results_and_pop_density <- results_16 %>% 
   inner_join(pop_density, by = c('combined_fips' = 'FIPS')) %>%
   mutate(two_party_ratio = (votes_dem) / (votes_dem + votes_gop))
-
+  
+```
+  
+```{r fig.width = 8, fig.height=6, echo = FALSE}
 results_and_pop_density %>%
     ggplot(aes(population_density, two_party_ratio))+
     geom_point(aes(size = population),
@@ -244,7 +245,7 @@ For example, look at the southwest corner of Texas, which had much higher rates 
 
 My first thought after Jake's post was that the model he built was pretty simple. There are a few other variables it would be good to adjust for. 
 
-What would the previous residual map look like if we controlled for factors like education, income, and age? I'm also going to add in the two party ratio from the 2012 election (which came from [this GitHub repository](https://github.com/tonmcg/US_County_Level_Election_Results_08-16)).
+What would the previous residual map look like if we controlled for factors like education, income, and age? How about if we add in the two party ratio from the 2012 election (which came from [this GitHub repository](https://github.com/tonmcg/US_County_Level_Election_Results_08-16))?
 
 We're also going to deviate from the linear model we fit before. I think it would make more sense to fit a [logistic regression](https://stats.idre.ucla.edu/r/dae/logit-regression/) instead of a linear model, since the thing we want to predict is a proportion (it lives on the range $[0,1]$), not necessarily a continuous value (which lives on the range $(-\infty, \infty)$).
 
@@ -308,7 +309,7 @@ results_pop_census_map %>%
 A few things are __noticeably different__ between the two maps:
 
   - The upper Midwest is considerably pinker than the previous map. Incorporating the 2012 election results demonstrates how conventional wisdom resulted in poor predictions for 2016.
-  - Adding variables to the model substantially improved the fit. Notice how the range for our color palette is now much smaller.
+  - Adding variables to the model substantially improved the fit. Notice how the range for the residuals is now much smaller.
   - Parts of the Northeast are now much pinker as well. Trump's vow to bring back coal jobs resonated with this area of the country.
 
 Some things __stayed the same__:
