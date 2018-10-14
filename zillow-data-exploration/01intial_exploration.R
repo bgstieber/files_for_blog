@@ -10,7 +10,13 @@ zhvi_condos <- zillow_file_condo %>%
 
 zhvi_homes <- zillow_file_single_family %>%
   read_csv()
+# using https://stackoverflow.com/a/1995984/5619526
+monnb <- function(d) { 
+  lt <- as.POSIXlt(as.Date(d, origin="1900-01-01"))
+  lt$year*12 + lt$mon 
+  } 
 
+mondf <- function(d1, d2) { monnb(d2) - monnb(d1) }
 
 
 zillow_data_tidy <- zhvi_condos %>%
@@ -125,7 +131,8 @@ all_property_since_2013 <- all_property %>%
   arrange(date) %>%
   group_by(RegionID) %>%
   mutate(pct_change_condo = (zhvi_condo - lag(zhvi_condo)) / lag(zhvi_condo),
-         pct_change_home = (zhvi_home - lag(zhvi_home)) / lag(zhvi_home))
+         pct_change_home = (zhvi_home - lag(zhvi_home)) / lag(zhvi_home)) %>%
+  mutate(months_since_jan1_2013 = mondf('2013-01-01', date))
 
 
 all_property_since_2013_summary <- all_property_since_2013  %>%
@@ -136,6 +143,23 @@ all_property_since_2013_summary %>%
   ggplot(aes(pct_change_condo, pct_change_home))+
   geom_point(alpha = 0.1)+
   geom_abline(aes(slope = 1, intercept = 0))
+
+# nest by zip code and fit models
+fit_mod <- function(df){
+  lm(I(log(zhvi_condo)) ~ months_since_jan1_2013, data = df)
+}
+
+all_property_since_2013_nested <- all_property_since_2013 %>%
+  group_by(RegionName, City, CountyName, State) %>%
+  nest() %>%
+  mutate(model = map(data, fit_mod))
+
+all_property_since_2013_nested_glance <- 
+  all_property_since_2013_nested %>%
+  mutate(glance = map(model, broom::glance)) %>%
+  unnest(glance, .drop = TRUE)
+
+
 
 
 
