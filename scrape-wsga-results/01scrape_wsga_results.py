@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+import pandas as pd
 
 headers = {'User-Agent': "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -38,7 +39,7 @@ def get_scorecard_links(leaderboard_url):
     # https://stackoverflow.com/a/14537238/5619526
     scorecards = [h for (h, remove) in zip(href_only, remove_text) if not remove]
     # concatenate original url
-    scorecards = [url.replace('leaderboard.htm', '') + h for h in scorecards]
+    scorecards = [leaderboard_url.replace('leaderboard.htm', '') + h for h in scorecards]
     
     return(scorecards)
 
@@ -73,9 +74,20 @@ def get_course_stat_url(course_url):
     all_a_href = [a['href'] for a in all_a]
     all_a_text_bool = [a.text.endswith('Complete Course Stats') for a in all_a]
     
+    url_sub = all_a_href[all_a_text_bool.index(True)]
     
+    url_full = course_url.replace('stat/index.htm', '') + url_sub.replace('../', '')
     
+    return(url_full)
     
 
+cs1 = "https://wsga.bluegolf.com/bluegolf/wsga12/event/wsga1243/contest/1/course/oaksgc/stat/index.htm"
+    
 def get_course_information(course_stat_url):
     
+    df = pd.read_html(course_stat_url)
+    df = df[0]
+    
+    df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
+    
+    return(df)
