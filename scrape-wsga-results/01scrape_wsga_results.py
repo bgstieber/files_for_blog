@@ -49,6 +49,8 @@ def get_score_from_link(scorecard_url):
     
     # create beautiful soup
     url_bs = url_to_bs(scorecard_url)
+    # title
+    title = url_bs.find('title').text
     # get scores
     scores = url_bs.find('tr', class_ = 'scores')
     scores = [s.text for s in scores.find_all('td')]
@@ -60,8 +62,12 @@ def get_score_from_link(scorecard_url):
     
     scores = [scores_front, scores_back]
     # https://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
-    scores = [item for sublist in scores for item in sublist]
-    return(scores)
+    scores = [float(item) for sublist in scores for item in sublist]
+    
+    df = pd.DataFrame(scores).T
+    df.columns = ['hole_' + str(x) for x in range(1, 19)]
+    df['title'] = title
+    return(df)
     
 ci1 = "https://wsga.bluegolf.com/bluegolf/wsga12/event/wsga1243/contest/1/course/stat/index.htm" 
 
@@ -87,7 +93,33 @@ def get_course_information(course_stat_url):
     
     df = pd.read_html(course_stat_url)
     df = df[0]
-    
+    # https://medium.com/@chaimgluck1/working-with-pandas-fixing-messy-column-names-42a54a6659cd
     df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
     
     return(df)
+    
+# get all scorecard links
+scores_url = []
+
+for u in all_urls:
+    
+    scores_url.append(get_scorecard_links(u))    
+    
+scores_url = [item for sublist in scores_url for item in sublist]
+
+# get all scores
+# very minimal error handling
+df_list = []
+fail_list = []
+
+for s in scores_url:
+    try:
+        df_list.append(get_score_from_link(s))
+    except:
+        fail_list.append(s)
+        
+all_data = pd.concat(df_list)
+
+all_data.to_csv(path_or_buf = "all_oaks_data.csv", index = False)
+
+
