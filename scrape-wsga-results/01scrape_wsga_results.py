@@ -17,6 +17,8 @@ all_urls = [
         "https://wsga.bluegolf.com/bluegolf/wsga12/event/wsga1243/contest/1/leaderboard.htm"
         ]
 
+course_urls = [t.replace('leaderboard.htm', 'course/stat/index.htm') for t in all_urls]
+
 def url_to_bs(url):
     request_url = requests.get(url = url,
                                headers = headers)
@@ -67,6 +69,8 @@ def get_score_from_link(scorecard_url):
     df = pd.DataFrame(scores).T
     df.columns = ['hole_' + str(x) for x in range(1, 19)]
     df['title'] = title
+    df['url'] = scorecard_url
+    
     return(df)
     
 ci1 = "https://wsga.bluegolf.com/bluegolf/wsga12/event/wsga1243/contest/1/course/stat/index.htm" 
@@ -92,34 +96,70 @@ cs1 = "https://wsga.bluegolf.com/bluegolf/wsga12/event/wsga1243/contest/1/course
 def get_course_information(course_stat_url):
     
     df = pd.read_html(course_stat_url)
-    df = df[0]
+    
+    if df[0].columns[0] == 0:
+        df = df[1]
+    else:
+        df = df[0]
     # https://medium.com/@chaimgluck1/working-with-pandas-fixing-messy-column-names-42a54a6659cd
     df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('(', '').str.replace(')', '')
     
+    df['url'] = course_stat_url
+    
     return(df)
     
+    
 # get all scorecard links
-scores_url = []
+get_and_write_scores = False
 
-for u in all_urls:
+if get_and_write_scores:
     
-    scores_url.append(get_scorecard_links(u))    
+    scores_url = []
     
-scores_url = [item for sublist in scores_url for item in sublist]
-
-# get all scores
-# very minimal error handling
-df_list = []
-fail_list = []
-
-for s in scores_url:
-    try:
-        df_list.append(get_score_from_link(s))
-    except:
-        fail_list.append(s)
+    for u in all_urls:
         
-all_data = pd.concat(df_list)
+        scores_url.append(get_scorecard_links(u))    
+        
+    scores_url = [item for sublist in scores_url for item in sublist]
+    
+    # get all scores
+    # very minimal error handling
+    df_list = []
+    fail_list = []
+    
+    for s in scores_url:
+        try:
+            df_list.append(get_score_from_link(s))
+        except:
+            fail_list.append(s)
+            
+    all_data = pd.concat(df_list)
+    
+    write_data = False
+    
+    if write_data:
+        all_data.to_csv(path_or_buf = "data\\all_oaks_data.csv", index = False)
 
-all_data.to_csv(path_or_buf = "all_oaks_data.csv", index = False)
+get_and_write_course_stats = False
+
+if get_and_write_course_stats:
+
+    course_stat_urls = []
+    
+    for u in course_urls:
+        course_stat_urls.append(get_course_stat_url(u))
+    
+    df_list = []
+    
+    for c in course_stat_urls:
+        df_list.append(get_course_information(c))
+    
+    all_course_data = pd.concat(df_list)
+    
+    write_course_stats = False
+    
+    if write_course_stats:
+        all_course_data.to_csv('data\\course_info.csv', index = False)
+        
 
 
