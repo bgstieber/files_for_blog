@@ -2,23 +2,30 @@ library(tidyverse)
 library(scales)
 theme_set(theme_bw())
 
-results <- read_csv('data//all_oaks_data.csv')
-course_info <- read_csv('data//course_info.csv')
+results <- read_csv('data//all_oaks_data.csv') %>%
+  mutate(tournament = str_extract(url, 'wsga[0-9]{3,}'))
 
-hole_and_par <- course_info %>%
+course_info <- read_csv('data//course_info.csv') %>%
+  mutate(tournament = str_extract(url, 'wsga[0-9]{3,}'))
+
+course_info2 <- course_info %>%
   select(hole = `hole#`,
-         par) %>%
+         par,
+         yards,
+         tournament) %>%
   filter(hole != 'Totals') %>%
   distinct() %>%
   mutate(hole = paste0('hole_', hole))
 
+
+
 results_long <- results %>%
-  gather(hole, score, -title, -url) %>%
-  inner_join(hole_and_par) %>%
+  gather(hole, score, -title, -url, -tournament) %>%
+  inner_join(course_info2) %>%
   mutate(score_rel_to_par = score - par)
 
 total_results <- results_long %>%
-  group_by(title, url) %>%
+  group_by(title, url, tournament) %>%
   summarise(total_score = sum(score),
             total_rel_to_par = sum(score_rel_to_par)) %>%
   ungroup() %>%
@@ -64,6 +71,14 @@ count_by_score_type %>%
   geom_tile(colour = 'black')+
   geom_text(aes(label = percent(perc_n)))+
   coord_flip()+
-  scale_x_reverse()+
+  scale_x_reverse(breaks = 1:18)+
   scale_y_discrete(limits = c('Birdie or Better', 'Par', 'Bogey', 'Double or Worse'))+
   scale_fill_viridis_c()
+
+
+results_long %>%
+  group_by(tournament, hole, yards, par) %>%
+  summarise(avg_rel_to_par = mean(score_rel_to_par)) %>%
+  ggplot(aes(tournament, avg_rel_to_par))+
+  geom_jitter(aes(colour = factor(par)),
+              position = position_jitter(width = 0.1, height = 0))
