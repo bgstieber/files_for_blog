@@ -85,14 +85,19 @@ results_long %>%
 
 
 # basic modeling
-results_wide2 <- results_long %>%
+results_wide <- results_long %>%
   select(url, tournament, hole, score_rel_to_par,
          total_rel_to_par, score_percentile) %>%
   spread(hole, score_rel_to_par) %>%
+  mutate(front_9 = rowSums(.[paste0('hole_', 1:9)]),
+         back_9 = rowSums(.[paste0('hole_', 10:18)])) 
+
+results_wide2 <- results_wide %>%
   mutate_at(vars(starts_with('hole')), 
             .funs = function(x) as.numeric(x <= 0)) %>%
   mutate(top25_indicator = as.numeric(score_percentile <= 0.25))
 
+cor(results_wide2$front_9, results_wide2$back_9)
 
 top25_model <- glm(top25_indicator ~ .,
                    data = select(results_wide2, 
@@ -117,3 +122,30 @@ coef_results %>%
   coord_flip()+
   xlab('hole')+
   ylab('coefficient from model')
+
+yvar <- sapply(2:18, FUN = function(x) paste0('hole_', x:18, '+',
+                                              collapse = ''))
+
+yvar <- substring(yvar, 1, nchar(yvar) - 1)
+
+yvar <- paste0('I(', yvar, ')')
+
+xvar <- sapply(1:17,
+               FUN = function(x) paste0('hole_', x:1, '+', collapse = ''))
+
+xvar <- substring(xvar, 1, nchar(xvar) - 1)
+
+xvar2 <- paste0('I(', xvar, ')')
+
+model_formulas <- data_frame(yvar, xvar, xvar2) %>%
+  mutate(formula1 = paste0(yvar, '~', xvar),
+         formula2 = paste0(yvar, '~', xvar2)) 
+
+
+individual_holes <- lapply(model_formulas$formula1,
+                           FUN = function(f) lm(f, data = results_wide))
+
+sum_holes <- lapply(model_formulas$formula2,
+                           FUN = function(f) lm(f, data = results_wide))
+
+
