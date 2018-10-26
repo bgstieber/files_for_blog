@@ -82,3 +82,38 @@ results_long %>%
   ggplot(aes(tournament, avg_rel_to_par))+
   geom_jitter(aes(colour = factor(par)),
               position = position_jitter(width = 0.1, height = 0))
+
+
+# basic modeling
+results_wide2 <- results_long %>%
+  select(url, tournament, hole, score_rel_to_par,
+         total_rel_to_par, score_percentile) %>%
+  spread(hole, score_rel_to_par) %>%
+  mutate_at(vars(starts_with('hole')), 
+            .funs = function(x) as.numeric(x <= 0)) %>%
+  mutate(top25_indicator = as.numeric(score_percentile <= 0.25))
+
+
+top25_model <- glm(top25_indicator ~ .,
+                   data = select(results_wide2, 
+                                 top25_indicator, 
+                                 starts_with('hole')),
+                   family = 'binomial')
+
+coef_results <- top25_model %>%
+  broom::tidy() %>%
+  bind_cols(top25_model %>% broom::confint_tidy()) %>%
+  left_join(course_info2 %>% 
+              distinct(hole, par),
+            by = c('term' = 'hole'))
+
+
+coef_results %>%
+  filter(!is.na(par)) %>%
+  ggplot(aes(reorder(term, estimate), estimate))+
+  geom_linerange(aes(ymin = conf.low, ymax = conf.high),
+                 alpha = 0.5)+
+  geom_point(aes(colour = factor(par)), size = 2)+
+  coord_flip()+
+  xlab('hole')+
+  ylab('coefficient from model')
