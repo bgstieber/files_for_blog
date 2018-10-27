@@ -161,5 +161,31 @@ if get_and_write_course_stats:
     if write_course_stats:
         all_course_data.to_csv('data\\course_info.csv', index = False)
         
+        
+# scrape results from 1 tournament at edelweiss
+t_url = "https://wsga.bluegolf.com/bluegolf/wsga17/event/wsga1754/contest/1/leaderboard.htm"
+c_url = t_url.replace('leaderboard.htm', 'course/stat/index.htm')
 
+scores_url = get_scorecard_links(t_url)
 
+# get all scores
+# very minimal error handling
+df_list = []
+fail_list = []
+
+for s in scores_url:
+    try:
+        df_list.append(get_score_from_link(s))
+    except:
+        fail_list.append(s)
+        
+all_data = pd.concat(df_list)
+
+write_data = True
+
+if write_data:
+    all_data.to_csv(path_or_buf = "data\\edelweiss_data.csv", index = False)
+    
+    
+course_data = get_course_information(get_course_stat_url(c_url))
+course_data.to_csv('data\\edelweiss_course_data.csv', index = False)
