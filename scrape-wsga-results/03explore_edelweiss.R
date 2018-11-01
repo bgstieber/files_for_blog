@@ -32,10 +32,30 @@ fit1 <- lm(score_to_par ~ -1 + hole, data = results_long2)
 summary(fit1)
 fit1_info <- tidy(fit1, conf.int = TRUE)
 
-fit1_info %>%
+p1 <- fit1_info %>%
   mutate(term = substring(term, 5, 999)) %>%
   inner_join(course2, by = c('term' = 'hole')) %>%
   ggplot(aes(reorder(term, estimate),estimate))+
   geom_linerange(aes(ymin = conf.low, ymax = conf.high), alpha = 0.5)+
   geom_point(aes(colour = factor(par)), size = 2)+
   coord_flip()
+
+my_score <- data_frame(
+  hole = paste0('hole_', 1:18),
+  score = c(5,4,5,3,4,5,2,5,5,
+            4,5,4,3,4,5,6,4,5)
+) %>%
+  inner_join(course2) %>%
+  mutate(score_rel_to_par = score - par)
+
+p1 +
+  geom_point(data = my_score,
+             aes(x = hole, y = score_rel_to_par),
+             size = 2)
+shots_gained <- predict(fit1, newdata = my_score) - my_score$score_rel_to_par
+
+plot()
+lowes()
+
+results_long3 <- results_long2 %>%
+  mutate(fitted = augment(fit1, newdata = results_long2)$.fitted)
