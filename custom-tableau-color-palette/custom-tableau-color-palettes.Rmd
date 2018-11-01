@@ -1,0 +1,67 @@
+---
+title: "Defining Custom Color Palettes in Tableau"
+author: "Brad Stieber"
+date: "October 31, 2018"
+output: html_document
+---
+
+Have you wanted to define custom color palettes in Tableau? In this post, I'm going to walk through how we can use `R` to programmatically create custom palettes in Tableau.
+
+This is going to be a short post, with just a little bit of `R` code. 
+
+At the end of the post, you'll see how to use `R` to generate custom color palettes to add to Tableau.
+
+## Defining Custom Color Palettes
+
+Tableau already has a [pretty good tutorial](https://onlinehelp.tableau.com/current/pro/desktop/en-us/formatting_create_custom_colors.htm), but I thought I'd share some `R` code that helps to make it easier to define custom palettes.
+
+The basics of defining custom palettes in Tableau is that you must modify the `Preferences.tps` file that comes with Tableau. This file can be found in your __My Tableau Repository__. It's just an `XML` file, which makes it pretty easy to modify.
+
+If we wanted to define a custom palette, based on the [three color Set1 palette](http://colorbrewer2.org/#type=qualitative&scheme=Set1&n=3) from [ColorBrewer](http://colorbrewer2.org), we would just add this to our `Preferences.tps` file:
+
+```xml
+<color-palette name="Set1 3 Color Qual Palette" type="regular">
+<color>#E41A1C</color>
+<color>#377EB8</color>
+<color>#4DAF4A</color>
+</color-palette>
+```
+
+In it, we defined the `name`, the `type` (regular, ordered-diverging, or ordered-sequential), and the colors.
+
+If you wanted to hand-edit this file, it might be painstaking and you'd need to do a lot of copying-and-pasting.
+
+So, why not write a quick function in `R` to generate this?
+
+## `create_tableau_palette` function
+
+```{r}
+create_tableau_palette <- function(palette_name,
+                                   palette_colors,
+                                   palette_type) {
+  # check palette type
+  p_type = match.arg(palette_type,
+                     choices = c('ordered-diverging',
+                                 'ordered-sequential',
+                                 'regular'))
+  # starting line
+  line_start <- paste0('<color-palette name="',
+                       palette_name,
+                       '" type="',
+                       p_type,
+                       '">\n')
+  # define colors
+  colors <- paste0('<color>',
+                   palette_colors,
+                   '</color>\n')
+  # ending line
+  line_end <- "</color-palette>\n"
+  # push together
+  cat(paste0(c(line_start, colors, line_end)))
+}
+
+```
+
+
+## Generating Palettes with Viridis
+
