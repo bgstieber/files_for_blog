@@ -5,18 +5,17 @@ date: "October 31, 2018"
 output: html_document
 ---
 
-Have you ever wanted to define custom color palettes in Tableau? In this post, I'm going to walk through how we can use `R` to programmatically generate custom palettes in Tableau. Creating custom color palettes for Tableau has never been easier!
+Have you ever wanted to define custom color palettes in Tableau, but didn't know how? In this post, I'm going to walk through how we can use `R` to programmatically generate custom palettes in Tableau. Creating custom color palettes for Tableau has never been easier!
 
 This is going to be a short post, with just a little bit of `R` code. 
 
-At the end of the post, you'll see how to use `R` to generate custom color palettes to add to Tableau. We'll show how to add palettes from viridis and ColorBrewer to Tableau.
-
+At the end of the post, you'll see how to use `R` to generate custom color palettes to add to Tableau. We'll show how to add palettes from the viridis color palette and ColorBrewer to Tableau.
 
 ## Defining Custom Color Palettes
 
 Tableau already has a [pretty good tutorial](https://onlinehelp.tableau.com/current/pro/desktop/en-us/formatting_create_custom_colors.htm) and [this tutorial](http://www.tableauexpert.co.in/2015/11/how-to-create-custom-color-palette-in.html) is pretty good too, but I thought I'd share some `R` code that helps to make it easier to define custom palettes. 
 
-The basics of defining custom palettes in Tableau is that you must modify the `Preferences.tps` file that comes with Tableau. This file can be found in your __My Tableau Repository__. It's just an `XML` file, which makes it pretty easy to hack around
+The basics of defining custom palettes in Tableau is that you have to modify the `Preferences.tps` file that comes with Tableau. This file can be found in your __My Tableau Repository__. It's an `XML` file, which makes it pretty easy to hack around in the text editor of your choice (I prefer [Sublime Text](https://www.sublimetext.com/)).
 
 If we wanted to define a custom palette, based on the [three color Set1 palette](http://colorbrewer2.org/#type=qualitative&scheme=Set1&n=3) from [ColorBrewer](http://colorbrewer2.org), we would just add this to our `Preferences.tps` file:
 
@@ -44,7 +43,7 @@ The following function takes three arguments:
   - __`palette_colors`__: this is a character vector of colors which will be added to the palette. You should use HEX codes (e.g. `"#E41A1C"`, `"#377EB8"`)
   - __`palette_type`__: this is one of the three palette types described above. In the previous example, it was _regular_.
   
-The function will print the resulting color palette to the console, so you can copy and paste the results. It uses the `cat` function, so it __only__ prints stuff to the console, it isn't necessary to store the result in a variable.
+The function will then print the resulting color palette to the console, so you can copy and paste the results. It uses the `cat` function, so it __only__ prints stuff to the console, it isn't necessary to store the result in a variable.
 
 ```{r}
 create_tableau_palette <- function(palette_name,
@@ -86,11 +85,11 @@ create_tableau_palette(palette_name = "Color Brewer Set2 4",
 
 You could take the result above (remove the `##` that results from printing) and copy and paste it into the `Preferences.tps` file.
 
-Of course, we could loop through many specifications to create many custom palettes rather quickly.
+Of course, we could loop through different specifications to create many custom palettes rather quickly.
 
 ## Generating Viridis Palettes for Tableau
 
-We can then use this function to generate custom Tableau color palettes for the popular [viridis palette](https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html).
+Let's use this function to generate custom Tableau color palettes for the popular [viridis palette](https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html). 
 
 ```{r echo = FALSE, message=FALSE, warning=FALSE}
 library(ggplot2)
@@ -119,11 +118,11 @@ x<-purrr::map(4:7,
 ```
 
 
-And then you can copy and paste that right into your `Preferences.tps` file! You'll need to remove those `##` symbols, but that shouldn't be an issue if you're using this function in your own `R` session.
+And then you can copy and paste that right into your `Preferences.tps` file! You'll need to remove those `##` symbols, but that shouldn't be an issue if you're using this function in your own `R` session. After you've added that to your file, restart Tableau, and then you should find the new palettes in your color choices.
 
 ## Wrapping Up
 
-This was a short post illustrating a way to use `R` to generate custom palettes for Tableau. I really like Tableau as a way to build interactive dashboards, but I have found the default color palettes to be somewhat lacking. Hopefully this post will show you how easy it is to add new palettes to Tableau without too much tedious copying-and-pasting.
+This was a short post illustrating one way to use `R` to generate custom palettes for Tableau. I really like Tableau as a way to build interactive dashboards, but I have found the default color palettes to be somewhat lacking (or maybe I just have high color palette standards). Hopefully this post will show you how easy it is to add new palettes to Tableau without having to do too much tedious copying-and-pasting.
 
 
 
