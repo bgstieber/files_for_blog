@@ -126,23 +126,73 @@ $(document).ready(function () {
 </div>
 
 
-<p>Have you wanted to define custom color palettes in Tableau? In this post, I’m going to walk through how we can use <code>R</code> to programmatically create custom palettes in Tableau.</p>
+<p>Have you wanted to define custom color palettes in Tableau? In this post, I’m going to walk through how we can use <code>R</code> to programmatically create custom palettes in Tableau. Making custom color palettes in Tableau has never been easier!</p>
 <p>This is going to be a short post, with just a little bit of <code>R</code> code.</p>
+<p>At the end of the post, you’ll see how to use <code>R</code> to generate custom color palettes to add to Tableau. We’ll show how to add palettes from viridis and ColorBrewer to Tableau.</p>
 <div id="defining-custom-color-palettes" class="section level2">
 <h2>Defining Custom Color Palettes</h2>
-<p>Tableau already has a <a href="https://onlinehelp.tableau.com/current/pro/desktop/en-us/formatting_create_custom_colors.htm">pretty good tutorial</a>, but I thought I’d share some <code>R</code> code that helps to make it easier to define custom palettes.</p>
+<p>Tableau already has a <a href="https://onlinehelp.tableau.com/current/pro/desktop/en-us/formatting_create_custom_colors.htm">pretty good tutorial</a>, but I thought I’d share some <code>R</code> code that helps to make it easier to define custom palettes. <a href="http://www.tableauexpert.co.in/2015/11/how-to-create-custom-color-palette-in.html">This tutorial</a> is pretty good too.</p>
 <p>The basics of defining custom palettes in Tableau is that you must modify the <code>Preferences.tps</code> file that comes with Tableau. This file can be found in your <strong>My Tableau Repository</strong>. It’s just an <code>XML</code> file, which makes it pretty easy to modify.</p>
 <p>If we wanted to define a custom palette, based on the <a href="http://colorbrewer2.org/#type=qualitative&amp;scheme=Set1&amp;n=3">three color Set1 palette</a> from <a href="http://colorbrewer2.org">ColorBrewer</a>, we would just add this to our <code>Preferences.tps</code> file:</p>
 <pre class="xml"><code>&lt;color-palette name=&quot;Set1 3 Color Qual Palette&quot; type=&quot;regular&quot;&gt;
-&lt;color&gt;#1A9850&lt;/color&gt;
-&lt;color&gt;#006837&lt;/color&gt;
 &lt;color&gt;#E41A1C&lt;/color&gt;
 &lt;color&gt;#377EB8&lt;/color&gt;
 &lt;color&gt;#4DAF4A&lt;/color&gt;
 &lt;/color-palette&gt;</code></pre>
+<p>In it, we defined the <code>name</code>, the <code>type</code> (regular, ordered-diverging, or ordered-sequential), and the colors.</p>
+<p>If you wanted to hand-edit this file, it might be painstaking and you’d need to do a lot of copying-and-pasting.</p>
+<p>So, why not write a quick function in <code>R</code> to generate this?</p>
+<p>Or, maybe you’d just like a pre-filled <code>Preferences.tps</code> file with many palettes added already. If so, check out <a href="https://github.com/bgstieber/files_for_blog/blob/master/custom-tableau-color-palette/Preferences.tps">my GitHub repository</a> which has a fairly complete <code>Preferences.tps</code> file.</p>
 </div>
-<div id="generating-palettes-with-viridis" class="section level2">
-<h2>Generating Palettes with Viridis</h2>
+<div id="create_tableau_palette-function" class="section level2">
+<h2><code>create_tableau_palette</code> function</h2>
+<p>The following function takes three argument:</p>
+<ul>
+<li><strong><code>palette_name</code></strong>: this is what you want the name to be in your file. In the example above, it was <em>Set1 3 Color Qual Palette</em>.</li>
+<li><strong><code>palette_colors</code></strong>: this is a character vector of colors which will be added to the palette. You should use HEX codes (e.g. <code>&quot;#E41A1C&quot;</code>, <code>&quot;#377EB8&quot;</code>)</li>
+<li><strong><code>palette_type</code></strong>: this is one of the three palette types described above. In the previous example, it was <em>regular</em>.</li>
+</ul>
+<pre class="r"><code>create_tableau_palette &lt;- function(palette_name,
+                                   palette_colors,
+                                   palette_type) {
+  # check palette type
+  p_type = match.arg(palette_type,
+                     choices = c('ordered-diverging',
+                                 'ordered-sequential',
+                                 'regular'))
+  # starting line
+  line_start &lt;- paste0('&lt;color-palette name=&quot;',
+                       palette_name,
+                       '&quot; type=&quot;',
+                       p_type,
+                       '&quot;&gt;\n')
+  # define colors
+  colors &lt;- paste0('&lt;color&gt;',
+                   palette_colors,
+                   '&lt;/color&gt;\n')
+  # ending line
+  line_end &lt;- &quot;&lt;/color-palette&gt;\n&quot;
+  # push together
+  cat(paste0(c(line_start, colors, line_end)))
+}</code></pre>
+<p>Here’s an example:</p>
+<pre class="r"><code>brewer_4 &lt;- RColorBrewer::brewer.pal(4, 'Set2')
+create_tableau_palette(palette_name = &quot;Color Brewer Set2 4&quot;,
+                       palette_colors = brewer_4,
+                       palette_type = 'regular')</code></pre>
+<pre><code>## &lt;color-palette name=&quot;Color Brewer Set2 4&quot; type=&quot;regular&quot;&gt;
+##  &lt;color&gt;#66C2A5&lt;/color&gt;
+##  &lt;color&gt;#FC8D62&lt;/color&gt;
+##  &lt;color&gt;#8DA0CB&lt;/color&gt;
+##  &lt;color&gt;#E78AC3&lt;/color&gt;
+##  &lt;/color-palette&gt;</code></pre>
+<p>Of course, we could loop through many specifications to create many custom palettes rather quickly.</p>
+</div>
+<div id="generating-viridis-palettes-for-tableau" class="section level2">
+<h2>Generating Viridis Palettes for Tableau</h2>
+</div>
+<div id="wrapping-up" class="section level2">
+<h2>Wrapping Up</h2>
 </div>
 
 
