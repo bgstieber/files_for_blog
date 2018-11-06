@@ -118,6 +118,6 @@ def full_wsga_scrape(leaderboard_url, course_url):
     course_stat_url = get_course_stat_url(course_url)
     course_data = get_course_information(course_stat_url)
     
-    return [score_data, course_data]
+    return([score_data, course_data])
     
     
