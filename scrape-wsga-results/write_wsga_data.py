@@ -95,6 +95,12 @@ for i in range(0, len(l_url_list)):
     score_data_list.append(temp_results_wcc[0])
     course_data_list.append(temp_results_wcc[1])
 
+score_data_wcc = pd.concat(score_data_list)
+score_data_wcc.to_csv('data\\wcc_score_data.csv', index = False)
+course_data_wcc = pd.concat(course_data_list)
+course_data_wcc.to_csv('data\\wcc_course_data.csv', index = False)
+
+
 
 #scores_url = get_scorecard_links(t_url)
 #
