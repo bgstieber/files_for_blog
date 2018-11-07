@@ -81,8 +81,8 @@ l_url_list = ["https://wiscpga.bluegolf.com/bluegolf/wiscpga11/event/wiscpga1128
 
 c_url_list = ["https://wiscpga.bluegolf.com/bluegolf/wiscpga11/event/wiscpga1128/contest/1/course/stat/index.htm",
               "https://wsga.bluegolf.com/bluegolf/wsga16/event/wsga1623/contest/1/course/stat/index.htm",
-              "https://wsga.bluegolf.com/bluegolf/wsga14/event/wsga1441/contest/1/leaderboard.htm",
-              "https://wsga.bluegolf.com/bluegolf/wsga14/event/wsga1441/contest/1/leaderboard.htm"]
+              "https://wsga.bluegolf.com/bluegolf/wsga14/event/wsga1441/contest/1/course/stat/index.htm",
+              "https://wsga.bluegolf.com/bluegolf/wsga11/event/wsga1128/contest/1/course/stat/index.htm"]
 
 
 score_data_list = []
