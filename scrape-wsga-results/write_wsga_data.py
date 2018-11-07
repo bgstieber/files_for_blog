@@ -73,6 +73,29 @@ edelweiss_data = ws.full_wsga_scrape(t_url, c_url)
 edelweiss_data[0].to_csv(path_or_buf = "data\\edelweiss_data.csv", index = False)
 edelweiss_data[1].to_csv('data\\edelweiss_course_data.csv', index = False)
 
+# results from wausau country club
+l_url_list = ["https://wiscpga.bluegolf.com/bluegolf/wiscpga11/event/wiscpga1128/contest/1/leaderboard.htm",
+              "https://wsga.bluegolf.com/bluegolf/wsga16/event/wsga1623/contest/1/leaderboard.htm",
+              "https://wsga.bluegolf.com/bluegolf/wsga14/event/wsga1441/contest/1/leaderboard.htm",
+              "https://wsga.bluegolf.com/bluegolf/wsga11/event/wsga1128/contest/1/leaderboard.htm"]
+
+c_url_list = ["https://wiscpga.bluegolf.com/bluegolf/wiscpga11/event/wiscpga1128/contest/1/course/stat/index.htm",
+              "https://wsga.bluegolf.com/bluegolf/wsga16/event/wsga1623/contest/1/course/stat/index.htm",
+              "https://wsga.bluegolf.com/bluegolf/wsga14/event/wsga1441/contest/1/leaderboard.htm",
+              "https://wsga.bluegolf.com/bluegolf/wsga14/event/wsga1441/contest/1/leaderboard.htm"]
+
+
+score_data_list = []
+course_data_list = []
+
+for i in range(0, len(l_url_list)):
+    temp_results_wcc = ws.full_wsga_scrape(l_url_list[i],
+                                           c_url_list[i])
+    
+    score_data_list.append(temp_results_wcc[0])
+    course_data_list.append(temp_results_wcc[1])
+
+
 #scores_url = get_scorecard_links(t_url)
 #
 ## get all scores
