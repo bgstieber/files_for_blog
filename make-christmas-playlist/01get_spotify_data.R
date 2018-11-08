@@ -22,7 +22,10 @@ holiday_playlist_features <- holiday_playlist %>%
 ## collection of spotify songs
 spotify_holiday <- my_playlists %>%
   filter(playlist_name == 'spotify_holiday_playlists') %>%
-  get_playlist_tracks()
+  get_playlist_tracks() %>%
+  # filter duplicates
+  filter(!duplicated(.[c('track_name', 'artist_name')] %>%
+           mutate_all(toupper)))
 
 spotify_holiday_features <- spotify_holiday %>%
   get_track_audio_features()
