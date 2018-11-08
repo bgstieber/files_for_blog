@@ -32,7 +32,8 @@ total_results <- results_long %>%
   mutate(score_percentile = ecdf(total_score)(total_score))
 
 results_long <- results_long %>%
-  inner_join(total_results)
+  inner_join(total_results) %>%
+  mutate(top_25 = ifelse(score_percentile <= .25, 'Y', 'N'))
 
 # average score relative to par by hole
 results_long %>%
@@ -45,7 +46,6 @@ results_long %>%
 
 
 avg_by_hole_and_top_25 <- results_long %>%
-  mutate(top_25 = ifelse(score_percentile <= .25, 'Y', 'N')) %>%
   group_by(hole, par, top_25) %>%
   summarise(avg_rel_to_par = mean(score_rel_to_par))
 
@@ -149,3 +149,11 @@ sum_holes <- lapply(model_formulas$formula2,
                            FUN = function(f) lm(f, data = results_wide))
 
 
+results_long %>%
+  group_by(url, tournament, top_25) %>%
+  summarise(sdev_rel_to_par = sd(score_rel_to_par),
+            avg_rel_to_par = mean(score_rel_to_par)) %>%
+  ggplot(aes(1, sdev_rel_to_par))+
+  geom_jitter(aes(colour = top_25),
+              position = position_jitter(height = 0))+
+  xlim(c(0, 2))
