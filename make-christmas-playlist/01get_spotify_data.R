@@ -29,3 +29,41 @@ spotify_holiday <- my_playlists %>%
 
 spotify_holiday_features <- spotify_holiday %>%
   get_track_audio_features()
+
+
+# visualize numeric variables
+
+holiday_playlist_features %>%
+  select_if(is.numeric) %>%
+  gather(variable, value) %>%
+  ggplot(aes(value, fill = variable))+
+  geom_histogram()+
+  facet_wrap(~variable, scales = 'free')
+
+spotify_holiday_features %>%
+  select_if(is.numeric) %>%
+  gather(variable, value) %>%
+  ggplot(aes(value, fill = variable))+
+  geom_histogram()+
+  facet_wrap(~variable, scales = 'free')
+
+# based on larger data set, should do the following
+# exclude: time_signature
+# log-scale: duration_ms, instrumentalness, liveness, speechiness, and tempo
+# then, center and scale all variables
+
+clean_spotify <- function(data, mu = 0, sigma = 0, calc_scales = TRUE){
+  
+  data1 <- data %>%
+    select(c("danceability", "energy", "loudness", "speechiness", "acousticness", 
+             "instrumentalness", "liveness", "valence", "tempo", "duration_ms")) %>%
+    mutate_at(c('duration_ms', 'instrumentalness',
+                'liveness', 'speechiness', 'tempo'),
+              log1p)
+  
+  
+  apply(data1, 1, FUN = function(x) (x - mu) / sigma) %>%
+    t() %>%
+    as_data_frame()
+  
+}
