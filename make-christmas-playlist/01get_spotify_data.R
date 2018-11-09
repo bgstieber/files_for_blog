@@ -1,6 +1,7 @@
 library(spotifyr)
 library(tidyverse)
 library(scales)
+library(caret)
 theme_set(theme_bw())
 # connect
 Sys.setenv(SPOTIFY_CLIENT_ID = 'xxxxxxxxxxxxxxxxxxxxx')
@@ -52,18 +53,29 @@ spotify_holiday_features %>%
 # log-scale: duration_ms, instrumentalness, liveness, speechiness, and tempo
 # then, center and scale all variables
 
-clean_spotify <- function(data, mu = 0, sigma = 0, calc_scales = TRUE){
-  
-  data1 <- data %>%
-    select(c("danceability", "energy", "loudness", "speechiness", "acousticness", 
-             "instrumentalness", "liveness", "valence", "tempo", "duration_ms")) %>%
-    mutate_at(c('duration_ms', 'instrumentalness',
-                'liveness', 'speechiness', 'tempo'),
-              log1p)
-  
-  
-  apply(data1, 1, FUN = function(x) (x - mu) / sigma) %>%
-    t() %>%
-    as_data_frame()
-  
-}
+holiday_playlist_features2 <- holiday_playlist_features %>%
+  select(c("track_uri", "danceability", "energy", "loudness", "speechiness", "acousticness", 
+           "instrumentalness", "liveness", "valence", "tempo", "duration_ms")) %>%
+  mutate_at(c('duration_ms', 'instrumentalness',
+              'liveness', 'speechiness', 'tempo'),
+            log1p)
+
+spotify_holiday_features2 <- spotify_holiday_features %>%
+  select(c("track_uri", "danceability", "energy", "loudness", "speechiness", "acousticness", 
+           "instrumentalness", "liveness", "valence", "tempo", "duration_ms")) %>%
+  mutate_at(c('duration_ms', 'instrumentalness',
+              'liveness', 'speechiness', 'tempo'),
+            log1p)
+
+# center and scale, using my playlist as "training" set
+pre_proc <- preProcess(holiday_playlist_features2,
+                       method = c('center', 'scale'))
+
+holiday_playlist_features2_scaled <- predict(pre_proc, 
+                                             holiday_playlist_features2)
+
+spotify_holiday_features2_scaled <- predict(pre_proc,
+                                            spotify_holiday_features2)
+
+# fit principal components (dimensionality reduction) on playlist
+prco_holiday <- prcomp(holiday_playlist_features2_scaled[,-1])
