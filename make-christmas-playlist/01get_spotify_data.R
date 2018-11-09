@@ -79,3 +79,21 @@ spotify_holiday_features2_scaled <- predict(pre_proc,
 
 # fit principal components (dimensionality reduction) on playlist
 prco_holiday <- prcomp(holiday_playlist_features2_scaled[,-1])
+
+training_pca <- predict(prco_holiday) %>%
+  as_data_frame() %>%
+  mutate(type = 'training')
+
+testing_pca <- predict(prco_holiday, 
+                       newdata = spotify_holiday_features2_scaled) %>%
+  as_data_frame() %>%
+  mutate(type = 'testing')
+
+full_pca <- training_pca %>%
+  bind_rows(testing_pca)
+
+
+full_pca %>%
+  ggplot(aes(PC1, PC2, colour = type))+
+  geom_point()
+
