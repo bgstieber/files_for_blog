@@ -130,3 +130,14 @@ full_pca %>%
   top_n(5, PC2) %>%
   inner_join(spotify_holiday) %>%
   select(track_name, artist_name)
+
+
+## find nearest neighbor for each song in my playlist
+dist_for_playists <- apply(holiday_playlist_features2_scaled[,-1],
+      1,
+      FUN = function(x){
+        as.matrix(dist(
+          rbind(x, spotify_holiday_features2_scaled[,-1])))[-1,1]
+    })
+
+table(apply(dist_for_playists, 2, which.min))
