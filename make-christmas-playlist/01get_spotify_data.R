@@ -83,20 +83,23 @@ pc_rotation <- prco_holiday$rotation %>%
   as_data_frame() %>%
   mutate(variable = row.names(prco_holiday$rotation))
 
-training_pca <- predict(prco_holiday) %>%
+training_pca <- predict(prco_holiday,
+                        newdata = holiday_playlist_features2_scaled) %>%
   as_data_frame() %>%
-  mutate(type = 'training')
+  mutate(type = 'training') %>%
+  bind_cols(holiday_playlist_features2_scaled)
 
 testing_pca <- predict(prco_holiday, 
                        newdata = spotify_holiday_features2_scaled) %>%
   as_data_frame() %>%
-  mutate(type = 'testing')
+  mutate(type = 'testing') %>%
+  bind_cols(spotify_holiday_features2_scaled)
 
 full_pca <- training_pca %>%
   bind_rows(testing_pca)
 
 pc_rotation %>%
-  gather(pc, value, -variable) %>%
+  gather(pc, value, starts_with('PC')) %>%
   filter(pc %in% paste0('PC', 1:4)) %>%
   ggplot(aes(pc, variable, fill = value))+
   geom_tile(colour = 'grey20')+
@@ -105,10 +108,14 @@ pc_rotation %>%
 full_pca %>%
   filter(type == 'training') %>%
   mutate(song = holiday_playlist$track_name) %>%
-  ggplot(aes(PC1, PC2, colour = type))+
+  ggplot(aes(PC1, PC2))+
   geom_point()+
   geom_text_repel(aes(label = song))
 
 full_pca %>%
   ggplot(aes(PC1, PC2, colour = type))+
-  geom_point()
+  geom_point()+
+  scale_colour_manual(values = c('training' = 'red',
+                                 'testing' = 'green'))
+
+## investigate some outliers
