@@ -119,3 +119,14 @@ full_pca %>%
                                  'testing' = 'green'))
 
 ## investigate some outliers
+# PC2 heavily weights on valence (positivity), danceability, and acousticness
+# Nat King Cole has multiple
+full_pca %>%
+  slice(which.max(PC2)) %>%
+  inner_join(spotify_holiday) %>%
+  select(track_name, artist_name)
+
+full_pca %>%
+  top_n(5, PC2) %>%
+  inner_join(spotify_holiday) %>%
+  select(track_name, artist_name)
