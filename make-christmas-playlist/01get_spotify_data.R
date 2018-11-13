@@ -144,6 +144,20 @@ dist_for_playists <- apply(holiday_playlist_features2_scaled[,-1],
 table(apply(dist_for_playists, 2, which.min))
 
 # another way
-nn_data <- nn2(spotify_holiday_features2_scaled[,-1],
+nn_data_k1 <- nn2(spotify_holiday_features2_scaled[,-1],
                holiday_playlist_features2_scaled[,-1],
                k = 1)
+
+nn_data_k5 <- nn2(spotify_holiday_features2_scaled[,-1],
+                  holiday_playlist_features2_scaled[,-1],
+                  k = 5)
+
+nn_data_k10 <- nn2(spotify_holiday_features2_scaled[,-1],
+                  holiday_playlist_features2_scaled[,-1],
+                  k = 10)
+# 21 songs that are 5th or nearer neighbors of
+# at least two songs
+sum(table(as.numeric(nn_data_k5$nn.idx)) > 1)
+# 60 songs that are 510h or nearer neighbors of
+# at least two songs
+sum(table(as.numeric(nn_data_k10$nn.idx)) > 1)
