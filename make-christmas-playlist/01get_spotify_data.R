@@ -3,6 +3,7 @@ library(tidyverse)
 library(scales)
 library(caret)
 library(ggrepel)
+library(RANN)
 theme_set(theme_bw())
 # connect
 access_token <- get_spotify_access_token()
@@ -141,3 +142,8 @@ dist_for_playists <- apply(holiday_playlist_features2_scaled[,-1],
     })
 
 table(apply(dist_for_playists, 2, which.min))
+
+# another way
+nn_data <- nn2(spotify_holiday_features2_scaled[,-1],
+               holiday_playlist_features2_scaled[,-1],
+               k = 1)
