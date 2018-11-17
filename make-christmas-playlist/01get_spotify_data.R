@@ -161,11 +161,21 @@ sum((t_idx <- table(as.numeric(nn_data_k5$nn.idx))) > 1)
 
 indices_k5 <- as.numeric(names(t_idx[t_idx > 1]))
 
-spotify_holiday_features2_scaled[indices_k5,] %>%
+close_neighbors <- spotify_holiday_features2_scaled[indices_k5,] %>%
   inner_join(spotify_holiday) %>%
-  select(artist_name, track_name)
+  select(artist_name, track_name, track_uri)
 
-
+full_pca %>%
+  left_join(close_neighbors %>% mutate(neighbor = T)) %>%
+  mutate(neighbor_alpha = ifelse(type == 'training',
+                                 'y',
+                                 ifelse(is.na(neighbor),
+                                        'n', 'y'))) %>%
+  ggplot(aes(PC1, PC2, colour = type))+
+  geom_point(aes(alpha = neighbor_alpha))+
+  scale_colour_manual(values = c('training' = 'red',
+                                 'testing' = 'green'))+
+  scale_alpha_manual(values = c('y' = 1, 'n' = 0.15))
 
 # 60 songs that are 510h or nearer neighbors of
 # at least two songs
