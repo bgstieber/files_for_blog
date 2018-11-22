@@ -180,3 +180,21 @@ full_pca %>%
 # 60 songs that are 510h or nearer neighbors of
 # at least two songs
 sum(table(as.numeric(nn_data_k10$nn.idx)) > 1)
+
+# fit a logistic regression, grab X highest predicted
+# probabilities for spotify playlist
+full_pca$playlist <- as.numeric(full_pca$type == 'training')
+
+xmas_model <- glm(playlist ~ PC1 + PC2 + PC3 + PC4,
+                  data = full_pca,
+                  family = 'binomial')
+
+full_pca$pred_prob <- predict(xmas_model, type = 'response')
+
+# top 30 songs
+
+full_pca %>%
+  filter(type == 'testing') %>%
+  top_n(30, pred_prob)
+
+
