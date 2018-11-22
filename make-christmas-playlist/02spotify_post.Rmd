@@ -111,6 +111,39 @@ spotify_holiday_features %>%
           subtitle = "These songs might suck")
 ```
 
+From the histograms above, we can make a few decisions about what we want to do with the quantitative variables:
+
+1. Get rid variables that seem quite discrete in nature (instrumentalness, speechiness, and time_signature)
+1. Log-scale a few variables with right-skewed distributions (duration_ms, liveness, and tempo)
+1. Center and scale variables to have mean zero and unit variance (this will make our PCA results more reasonable)
+
+```{r}
+vars_to_keep <- c("track_uri", "danceability", "energy", 
+                  "loudness", "acousticness", "liveness", 
+                  "valence", "tempo", "duration_ms")
+
+vars_to_log1p <- c('duration_ms', 'liveness', 'tempo')
+
+holiday_playlist_features2 <- holiday_playlist_features %>%
+  select(vars_to_keep) %>%
+  mutate_at(vars_to_log1p, log1p)
+
+spotify_holiday_features2 <- spotify_holiday_features %>%
+  select(vars_to_keep) %>%
+  mutate_at(vars_to_log1p, log1p)
+
+# center and scale, using my playlist as "training" set
+pre_proc <- preProcess(holiday_playlist_features2,
+                       method = c('center', 'scale'))
+
+holiday_playlist_features2_scaled <- predict(pre_proc, 
+                                             holiday_playlist_features2)
+
+spotify_holiday_features2_scaled <- predict(pre_proc,
+                                            spotify_holiday_features2)
+
+```
+
 
 ## Dimensionality Reduction with PCA
 

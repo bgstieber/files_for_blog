@@ -54,12 +54,10 @@ spotify_holiday_features %>%
 # then, center and scale all variables
 
 vars_to_keep <- c("track_uri", "danceability", "energy", 
-                  "loudness", "speechiness", "acousticness", 
-                  "instrumentalness", "liveness", "valence", 
-                  "tempo", "duration_ms")
+                  "loudness", "acousticness", "liveness", 
+                  "valence", "tempo", "duration_ms")
 
-vars_to_log1p <- c('duration_ms', 'instrumentalness',
-                   'liveness', 'speechiness', 'tempo')
+vars_to_log1p <- c('duration_ms', 'liveness', 'tempo')
 
 holiday_playlist_features2 <- holiday_playlist_features %>%
   select(vars_to_keep) %>%
