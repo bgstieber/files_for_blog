@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,
+knitr::opts_chunk$set(echo = TRUE,
                       warning = FALSE,
                       message = FALSE)
 ```
@@ -43,6 +43,9 @@ In the code below, we're going to connect to Spotify, and then pull all of my pl
 ```{r}
 # connect
 access_token <- get_spotify_access_token()
+```
+
+```{r cache = TRUE, results=FALSE}
 # get my playlists
 my_playlists <- get_user_playlists('12102534356') 
 # get playlist and playlist track info
@@ -66,5 +69,54 @@ spotify_holiday_features <- spotify_holiday %>%
   get_track_audio_features()
 ```
 
+Now we have all the data we'll need for this analysis. We have four `data_frame`s to play with. There are two containing qualitative information about the tracks (`holiday_playlist` and `spotify_holiday`) and two containing quantitative information (`holiday_playlist_features` and `spotify_holiday_features)`. 
 
+The quantitative information has variables like __energy__ (a measure of the intensity and activity of the track) and __danceability__ (describes how suitable a track is for dancing). More information can be found in [the documentation for the Spotify API](https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/).
+
+## Data Processing
+
+Let's take a look at the structure of `holiday_playlist_features`.
+
+```{r}
+str(holiday_playlist_features)
+```
+
+We can also visualize the quantitative variables. We'll look at both data sets, and the distributions should give us insight into whether we need to transform any of the variables (e.g. log-scale, square root transformations).
+
+First, we'll look at the features from the playlist I hand-curated.
+
+```{r echo = FALSE}
+holiday_playlist_features %>%
+  select_if(is.numeric) %>%
+  gather(variable, value) %>%
+  ggplot(aes(value, fill = variable))+
+  geom_histogram()+
+  facet_wrap(~variable, scales = 'free')+
+  theme(legend.position = 'none')+
+  ggtitle('Hand Curated Playlist Features',
+          subtitle = "These songs don't suck")
+```
+
+Then we'll look at the playlist with candidate songs to be added to the Playlist that Doesn't Suck.
+
+```{r echo = FALSE}
+spotify_holiday_features %>%
+  select_if(is.numeric) %>%
+  gather(variable, value) %>%
+  ggplot(aes(value, fill = variable))+
+  geom_histogram()+
+  facet_wrap(~variable, scales = 'free')+
+  theme(legend.position = 'none')+
+  ggtitle('Candidate Playlist Features',
+          subtitle = "These songs might suck")
+```
+
+
+## Dimensionality Reduction with PCA
+
+## Models
+
+## Combining our Intelligence
+
+## "Wrapping" Up
 

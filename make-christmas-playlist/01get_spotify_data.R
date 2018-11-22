@@ -53,19 +53,21 @@ spotify_holiday_features %>%
 # log-scale: duration_ms, instrumentalness, liveness, speechiness, and tempo
 # then, center and scale all variables
 
+vars_to_keep <- c("track_uri", "danceability", "energy", 
+                  "loudness", "speechiness", "acousticness", 
+                  "instrumentalness", "liveness", "valence", 
+                  "tempo", "duration_ms")
+
+vars_to_log1p <- c('duration_ms', 'instrumentalness',
+                   'liveness', 'speechiness', 'tempo')
+
 holiday_playlist_features2 <- holiday_playlist_features %>%
-  select(c("track_uri", "danceability", "energy", "loudness", "speechiness", "acousticness", 
-           "instrumentalness", "liveness", "valence", "tempo", "duration_ms")) %>%
-  mutate_at(c('duration_ms', 'instrumentalness',
-              'liveness', 'speechiness', 'tempo'),
-            log1p)
+  select(vars_to_keep) %>%
+  mutate_at(vars_to_log1p, log1p)
 
 spotify_holiday_features2 <- spotify_holiday_features %>%
-  select(c("track_uri", "danceability", "energy", "loudness", "speechiness", "acousticness", 
-           "instrumentalness", "liveness", "valence", "tempo", "duration_ms")) %>%
-  mutate_at(c('duration_ms', 'instrumentalness',
-              'liveness', 'speechiness', 'tempo'),
-            log1p)
+  select(vars_to_keep) %>%
+  mutate_at(vars_to_log1p, log1p)
 
 # center and scale, using my playlist as "training" set
 pre_proc <- preProcess(holiday_playlist_features2,
