@@ -113,7 +113,7 @@ spotify_holiday_features %>%
 
 From the histograms above, we can make a few decisions about what we want to do with the quantitative variables:
 
-1. Get rid variables that seem quite discrete in nature (instrumentalness, speechiness, and time_signature)
+1. Get rid of variables that seem quite discrete in nature (instrumentalness, speechiness, and time_signature)
 1. Log-scale a few variables with right-skewed distributions (duration_ms, liveness, and tempo)
 1. Center and scale variables to have mean zero and unit variance (this will make our PCA results more reasonable)
 
@@ -142,6 +142,33 @@ holiday_playlist_features2_scaled <- predict(pre_proc,
 spotify_holiday_features2_scaled <- predict(pre_proc,
                                             spotify_holiday_features2)
 
+```
+
+Let's make the same historgrams as above, but with the centered and scaled values.
+
+```{r}
+holiday_playlist_features2_scaled %>%
+  select_if(is.numeric) %>%
+  gather(variable, value) %>%
+  ggplot(aes(value, fill = variable))+
+  geom_histogram()+
+  facet_wrap(~variable, scales = 'free')+
+  theme(legend.position = 'none')+
+  ggtitle('Hand Curated Playlist Features - Centered and Scaled',
+          subtitle = "These songs don't suck")
+```
+
+
+```{r}
+spotify_holiday_features2_scaled %>%
+  select_if(is.numeric) %>%
+  gather(variable, value) %>%
+  ggplot(aes(value, fill = variable))+
+  geom_histogram()+
+  facet_wrap(~variable, scales = 'free')+
+  theme(legend.position = 'none')+
+  ggtitle('Candidate Playlist Features - Centered and Scaled',
+          subtitle = "These songs might suck")
 ```
 
 
