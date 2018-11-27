@@ -206,17 +206,17 @@ And now we can visualize the first two principal components, and look for cluste
 
 ```{r echo = FALSE}
 full_pca %>%
-  mutate(type = factor(type, levels = c('training', 'testing'))) %>%
-  ggplot(aes(PC1, PC2, colour = type), alpha = 0.7)+
-  geom_point(size = 2)+
+  ggplot(aes(PC1, PC2, colour = type))+
+  geom_point(size = 2, alpha = 0.7)+
+  geom_point(data = filter(full_pca, type == 'training')) +
   scale_colour_manual(values = c('testing' = 'green',
-                                 'training' = 'red') %>% rev,
-                      labels = c('candidates', 'curated') %>% rev,
+                                 'training' = 'red'),
+                      labels = c('candidates', 'curated'),
                       name = 'Song Type')+
   ggtitle('First Two Principal Components for Holiday Songs')
 ```
 
-We can see that almost all of the songs from my holiday playlist have values for PC2 below zero. Let's look at the variable loadings for the first two principal components. These loadings describe the weights that are multiplied by the variables to calculate the respective principal components.
+We can see that many of the songs from my holiday playlist have values for PC2 below zero (`r scales::percent(mean(training_pca$PC2 <= 0))`). Let's look at the variable loadings for the first two principal components. These loadings describe the weights that are multiplied by the variables to calculate the respective principal components.
 
 ```{r echo = FALSE}
 prco_holiday$rotation %>%
@@ -228,7 +228,7 @@ prco_holiday$rotation %>%
   knitr::kable()
 ```
 
-There are three variables which have positive loadings for PC2 (duration_ms, liveness, and energy). 
+There are three variables which have positive loadings for PC2 (duration_ms, liveness, and energy). Since 
 
 ## Models
 
