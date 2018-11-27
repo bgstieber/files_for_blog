@@ -46,6 +46,7 @@ access_token <- get_spotify_access_token()
 ```
 
 ```{r cache = TRUE, results=FALSE}
+update <- 1 # change to update data
 # get my playlists
 my_playlists <- get_user_playlists('12102534356') 
 # get playlist and playlist track info
@@ -146,7 +147,7 @@ spotify_holiday_features2_scaled <- predict(pre_proc,
 
 Let's make the same historgrams as above, but with the centered and scaled values.
 
-```{r}
+```{r echo = FALSE}
 holiday_playlist_features2_scaled %>%
   select_if(is.numeric) %>%
   gather(variable, value) %>%
@@ -158,8 +159,7 @@ holiday_playlist_features2_scaled %>%
           subtitle = "These songs don't suck")
 ```
 
-
-```{r}
+```{r echo = FALSE}
 spotify_holiday_features2_scaled %>%
   select_if(is.numeric) %>%
   gather(variable, value) %>%
@@ -173,6 +173,50 @@ spotify_holiday_features2_scaled %>%
 
 
 ## Dimensionality Reduction with PCA
+
+We have 8 quantitiatve variables in the data set, which makes it challenging to visualize. We can use a [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction) technique like principal components analysis to make our data easier to visualize.
+
+Performing PCA in `R` is fairly straightforward. We're going to first run PCA on my curated playlist, and use the results to generate "predictions" for the larger playlist.
+
+```{r}
+# fit principal components (dimensionality reduction) on playlist
+prco_holiday <- prcomp(holiday_playlist_features2_scaled[,-1])
+
+pc_rotation <- prco_holiday$rotation %>%
+  as_data_frame() %>%
+  mutate(variable = row.names(prco_holiday$rotation))
+
+training_pca <- predict(prco_holiday,
+                        newdata = holiday_playlist_features2_scaled) %>%
+  as_data_frame() %>%
+  mutate(type = 'training') %>%
+  bind_cols(holiday_playlist_features2_scaled)
+
+testing_pca <- predict(prco_holiday, 
+                       newdata = spotify_holiday_features2_scaled) %>%
+  as_data_frame() %>%
+  mutate(type = 'testing') %>%
+  bind_cols(spotify_holiday_features2_scaled)
+
+full_pca <- training_pca %>%
+  bind_rows(testing_pca)
+```
+
+And now we can visualize the first two principal components, and look for clusters in the data.
+
+```{r echo = FALSE}
+full_pca %>%
+  ggplot(aes(PC1, PC2, colour = type))+
+  geom_point(size = 2)+
+  scale_colour_manual(values = c('testing' = 'green',
+                                 'training' = 'red'),
+                      labels = c('candidates', 'curated'),
+                      name = 'Song Type')+
+  ggtitle('First Two Principal Components for Holiday Songs')
+```
+
+
+
 
 ## Models
 
