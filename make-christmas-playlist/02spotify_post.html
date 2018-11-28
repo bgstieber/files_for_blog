@@ -141,7 +141,6 @@ library(tidyverse)
 library(scales)
 library(caret)
 library(ggrepel)
-library(RANN)
 theme_set(theme_bw())</code></pre>
 <div id="getting-data-from-spotify" class="section level2">
 <h2>Getting data from Spotify</h2>
@@ -357,6 +356,23 @@ full_pca &lt;- training_pca %&gt;%
 </div>
 <div id="models" class="section level2">
 <h2>Models</h2>
+<p>Our main purpose for building models is to find songs that are similar to the ones in my curated playlist. We’re going to tackle this using a collection of data science strategies. We’re going to build three types of models: a logistic regression using the first four principal components, a random forest model on the full data, and a nearest neighbors search to find minimum distances.</p>
+<p>For the first two models (logistic regression and random forest), we need to generate a binary variable to predict. In this setting, we can check whether the song belongs to my curated playlist or not. The end result of these models is a predicted probability, so songs with high predicted probabilities “look like” songs that are in my curated playlist.</p>
+<pre class="r"><code>library(randomForest)
+library(RANN)
+X_logit &lt;- full_pca %&gt;% select(PC1:PC4)
+X_rf &lt;- full_pca %&gt;% select(danceability:duration_ms)
+y &lt;- as.numeric(full_pca$type == 'training')
+y_rf &lt;- factor(y)
+
+rand_f &lt;- randomForest(y ~ ., 
+                       data = bind_cols(X_rf, 'y' = y_rf),
+                       ntree = 5000)
+logit &lt;- glm(y ~ ., data = bind_cols(X_logit, 'y' = y), family = 'binomial')
+
+nn_k1 &lt;- nn2(holiday_playlist_features2_scaled[,-1],
+             spotify_holiday_features2_scaled[,-1],
+             k = 1)</code></pre>
 </div>
 <div id="combining-our-intelligence" class="section level2">
 <h2>Combining our Intelligence</h2>
