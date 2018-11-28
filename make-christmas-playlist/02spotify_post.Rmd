@@ -38,7 +38,7 @@ theme_set(theme_bw())
 
 The `spotifyr` package makes it really easy to grab data from Spotify. You can find a pretty good tutorial to get up-and-running from the [package's website](https://www.rcharlie.com/spotifyr/).
 
-In the code below, we're going to connect to Spotify, and then pull all of my playlists. I created two playlists for this analysis. The first is called __holiday_playlist__, and it's a collection of 21 songs that I thought were pretty good. Then, we're going to pull in another playlist called __spotify_holiday_playlists__, which is a collection of 300+ holiday songs coming from a variety of Spotify holiday playlists (you can find the list of playlists I used [on my GitHub](https://github.com/bgstieber/files_for_blog/blob/master/make-christmas-playlist/spotify_playlists.txt)).
+In the code below, we're going to connect to Spotify, and then pull all of my playlists. I created two playlists for this analysis. The first is called __holiday_playlist__, and it's a collection of 22 songs that I thought were pretty good. Then, we're going to pull in another playlist called __spotify_holiday_playlists__, which is a collection of 300+ holiday songs coming from a variety of Spotify holiday playlists (you can find the list of playlists I used [on my GitHub](https://github.com/bgstieber/files_for_blog/blob/master/make-christmas-playlist/spotify_playlists.txt)).
 
 ```{r}
 # connect
@@ -216,7 +216,7 @@ full_pca %>%
   ggtitle('First Two Principal Components for Holiday Songs')
 ```
 
-We can see that many of the songs from my holiday playlist have values for PC2 below zero (`r scales::percent(mean(training_pca$PC2 <= 0))`). Let's look at the variable loadings for the first two principal components. These loadings describe the weights that are multiplied by the variables to calculate the respective principal components.
+We can see that a majority of the songs from my holiday playlist have values for PC2 below zero (`r scales::percent(mean(training_pca$PC2 <= 0))`). Let's look at the variable loadings for the first two principal components. These loadings describe the weights that are multiplied by the variables to calculate the respective principal components.
 
 ```{r echo = FALSE}
 prco_holiday$rotation %>%
@@ -228,11 +228,35 @@ prco_holiday$rotation %>%
   knitr::kable()
 ```
 
-There are three variables which have positive loadings for PC2 (duration_ms, liveness, and energy). Since 
+There are three variables which have positive loadings for PC2 (duration_ms, liveness, and energy). The largest positive weight is for duration_ms, implying that I tend to prefer shorter holiday songs.
+
+There are five dots toward the top of the plot, which are separated from the rest of the data points. These are all coming from the candidate playlist, and it's very likely that the methods from the __Models__ section will exclude these songs from the final playlist.
+
+```{r results = 'hide'}
+full_pca %>%
+    top_n(5, PC2) %>%
+    inner_join(spotify_holiday) %>%
+    select(type, track_name, artist_name)
+```
+
+```{r echo = FALSE}
+full_pca %>%
+    top_n(5, PC2) %>%
+    inner_join(spotify_holiday) %>%
+    select(type, track_name, artist_name) %>% 
+    knitr::kable(caption = 'Five outlier songs from PC1 vs. PC2 plot')
+```
+
 
 ## Models
 
+
+
 ## Combining our Intelligence
+
+I want a playlist that can last on shuffle for around four hours (a decent length of time for a holiday party). Assuming an average song lasts 4 minutes, we'll need about 60 songs in our final playlist. So, we need to find an additional 38 (give or take) songs to add.
+
+To 
 
 ## "Wrapping" Up
 
