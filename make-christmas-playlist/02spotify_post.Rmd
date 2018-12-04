@@ -264,21 +264,42 @@ y_rf <- factor(y)
 rand_f <- randomForest(y ~ ., 
                        data = bind_cols(X_rf, 'y' = y_rf),
                        ntree = 5000)
+
+rand_f_scores <- full_pca %>% 
+  filter(type == 'testing') %>%
+  mutate(score = predict(rand_f, newdata = ., type = 'prob')[,2]) %>%
+  select(track_uri, score)
+
 logit <- glm(y ~ ., data = bind_cols(X_logit, 'y' = y), family = 'binomial')
+
+logit_scores <- full_pca %>% 
+  filter(type == 'testing') %>%
+  broom::augment(logit, newdata = ., type.predict = 'response') %>% 
+  select(track_uri, 'score' = .fitted)
 
 nn_k1 <- nn2(holiday_playlist_features2_scaled[,-1],
              spotify_holiday_features2_scaled[,-1],
              k = 1)
 
-```
+nn_scores <- spotify_holiday_features2_scaled %>%
+  select(track_uri) %>%
+  mutate(score = nn_k1$nn.dists) 
 
+```
 
 
 ## Combining our Intelligence
 
 I want a playlist that can last on shuffle for around four hours (a decent length of time for a holiday party). Assuming an average song lasts 4 minutes, we'll need about 60 songs in our final playlist. So, we need to find an additional 38 (give or take) songs to add.
 
-To 
+We can pool the results of our models together to come up with a "score" to evaluate how well a certain song might fit in to my curated playlist.
+
+```{r}
+score_df <- data_frame(
+  song = 
+)
+```
+
 
 ## "Wrapping" Up
 
