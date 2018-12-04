@@ -11,14 +11,14 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE)
 ```
 
-In this post, I'm going to using data from Spotify to make a Christmas playlist that you'll actually like. We're going to employ a few standard data science techniques to __import__ data, __explore__ it, and finally __model__ the data.
+In this post, I'm going to use data from Spotify to make a Christmas playlist that you might actually like. We're going to employ a few standard data science techniques to __import__ data, __explore__ it, and finally __model__ the data.
 
 Here are the steps we're going to take
 
 1. Pull data into `R` using the [__`spotifyr`__](https://www.rcharlie.com/spotifyr/) package
 1. Clean up the data using functions from the [__`caret`__](http://caret.r-forge.r-project.org/) package
 1. Use principal components analysis to reduce the dimensionality of our data
-1. Apply k-nearest neighbor and logistic regression modeling techniques to find Christmas songs that don't suck
+1. Apply random forest, k-nearest neighbor, and logistic regression modeling techniques to find Christmas songs that don't suck
 1. Use our findings to create a playlist that you won't feel like turning off after ten minutes
 
 Here are the packages we'll need:
@@ -31,7 +31,6 @@ library(caret)
 library(ggrepel)
 theme_set(theme_bw())
 ```
-
 
 ## Getting data from Spotify
 

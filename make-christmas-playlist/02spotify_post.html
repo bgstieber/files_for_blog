@@ -126,13 +126,13 @@ $(document).ready(function () {
 </div>
 
 
-<p>In this post, I’m going to using data from Spotify to make a Christmas playlist that you’ll actually like. We’re going to employ a few standard data science techniques to <strong>import</strong> data, <strong>explore</strong> it, and finally <strong>model</strong> the data.</p>
+<p>In this post, I’m going to use data from Spotify to make a Christmas playlist that you might actually like. We’re going to employ a few standard data science techniques to <strong>import</strong> data, <strong>explore</strong> it, and finally <strong>model</strong> the data.</p>
 <p>Here are the steps we’re going to take</p>
 <ol style="list-style-type: decimal">
 <li>Pull data into <code>R</code> using the <a href="https://www.rcharlie.com/spotifyr/"><strong><code>spotifyr</code></strong></a> package</li>
 <li>Clean up the data using functions from the <a href="http://caret.r-forge.r-project.org/"><strong><code>caret</code></strong></a> package</li>
 <li>Use principal components analysis to reduce the dimensionality of our data</li>
-<li>Apply k-nearest neighbor and logistic regression modeling techniques to find Christmas songs that don’t suck</li>
+<li>Apply random forest, k-nearest neighbor, and logistic regression modeling techniques to find Christmas songs that don’t suck</li>
 <li>Use our findings to create a playlist that you won’t feel like turning off after ten minutes</li>
 </ol>
 <p>Here are the packages we’ll need:</p>
