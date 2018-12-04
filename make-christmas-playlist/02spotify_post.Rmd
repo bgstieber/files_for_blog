@@ -45,7 +45,6 @@ access_token <- get_spotify_access_token()
 ```
 
 ```{r cache = TRUE, results=FALSE}
-update <- 1 # change to update data
 # get my playlists
 my_playlists <- get_user_playlists('12102534356') 
 # get playlist and playlist track info
@@ -144,7 +143,7 @@ spotify_holiday_features2_scaled <- predict(pre_proc,
 
 ```
 
-Let's make the same historgrams as above, but with the centered and scaled values.
+Let's make the same histograms as above, but with the centered and scaled values.
 
 ```{r echo = FALSE}
 holiday_playlist_features2_scaled %>%
@@ -173,7 +172,7 @@ spotify_holiday_features2_scaled %>%
 
 ## Dimensionality Reduction with PCA
 
-We have 8 quantitiatve variables in the data set, which makes it challenging to visualize. We can use a [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction) technique like principal components analysis to make our data easier to visualize.
+We have 8 quantitative variables in the data set, which makes it challenging to visualize. We can use a [dimensionality reduction](https://en.wikipedia.org/wiki/Dimensionality_reduction) technique like principal components analysis to make our data easier to visualize.
 
 Performing PCA in `R` is fairly straightforward. We're going to first run PCA on my curated playlist, and use the results to generate "predictions" for the larger playlist.
 
@@ -227,7 +226,7 @@ prco_holiday$rotation %>%
   knitr::kable()
 ```
 
-There are three variables which have positive loadings for PC2 (duration_ms, liveness, and energy). The largest positive weight is for duration_ms, implying that I tend to prefer shorter holiday songs.
+There are three variables which have positive loadings for PC2 (duration_ms, liveness, and energy). The largest positive weight is for duration_ms, implying ~~I am a Grinch~~ that I tend to prefer shorter holiday songs.
 
 There are five dots toward the top of the plot, which are separated from the rest of the data points. These are all coming from the candidate playlist, and it's very likely that the methods from the __Models__ section will exclude these songs from the final playlist.
 
@@ -249,7 +248,9 @@ full_pca %>%
 
 ## Models
 
-Our main purpose for building models is to find songs that are similar to the ones in my curated playlist. We're going to tackle this using a collection of data science strategies. We're going to build three types of models: a logistic regression using the first four principal components, a random forest model on the full data, and a nearest neighbors search to find minimum distances.
+Our main purpose for building models is __to find songs that are similar to the ones in my curated playlist__. We're going to tackle this using a collection of models. 
+
+We're going to build three types of models: a logistic regression using the first four principal components, a random forest model on the full data, and a nearest neighbors search to find minimum distances.
 
 For the first two models (logistic regression and random forest), we need to generate a binary variable to predict. In this setting, we can check whether the song belongs to my curated playlist or not. The end result of these models is a predicted probability, so songs with high predicted probabilities "look like" songs that are in my curated playlist.
 
@@ -268,14 +269,14 @@ rand_f <- randomForest(y ~ .,
 rand_f_scores <- full_pca %>% 
   filter(type == 'testing') %>%
   mutate(score = predict(rand_f, newdata = ., type = 'prob')[,2]) %>%
-  select(track_uri, score)
+  select(track_uri, 'rand_f_score' = score)
 
 logit <- glm(y ~ ., data = bind_cols(X_logit, 'y' = y), family = 'binomial')
 
 logit_scores <- full_pca %>% 
   filter(type == 'testing') %>%
   broom::augment(logit, newdata = ., type.predict = 'response') %>% 
-  select(track_uri, 'score' = .fitted)
+  select(track_uri, 'logit_score' = .fitted)
 
 nn_k1 <- nn2(holiday_playlist_features2_scaled[,-1],
              spotify_holiday_features2_scaled[,-1],
@@ -283,10 +284,13 @@ nn_k1 <- nn2(holiday_playlist_features2_scaled[,-1],
 
 nn_scores <- spotify_holiday_features2_scaled %>%
   select(track_uri) %>%
-  mutate(score = nn_k1$nn.dists) 
+  mutate(knn_score = nn_k1$nn.dists[,1]) %>%
+  # need to reverse the "score", as it is a measure of distance
+  mutate(knn_score = max(knn_score) - knn_score)
 
 ```
 
+You'll notice in that last line that I'm essentially reversing the distance "score" that comes from the k-nearest neighbors model. Since the output is a measure of distance, we actually want to have the lower scores get more weight. A lower distance means the song was closest to its nearest neighbor than a high distance. 
 
 ## Combining our Intelligence
 
@@ -295,9 +299,27 @@ I want a playlist that can last on shuffle for around four hours (a decent lengt
 We can pool the results of our models together to come up with a "score" to evaluate how well a certain song might fit in to my curated playlist.
 
 ```{r}
-score_df <- data_frame(
-  song = 
-)
+score_df <- rand_f_scores %>%
+  full_join(logit_scores) %>%
+  full_join(nn_scores) %>%
+  mutate_if(is.numeric, scale) %>%
+  mutate(avg_score = (knn_score + logit_score + rand_f_score) / 3)
+```
+
+In the code above, we gathered all three scores together, and utilized a naive [ensemble model](https://searchbusinessanalytics.techtarget.com/definition/Ensemble-modeling) to pool the results of the three models. We normalized the three scores before ensembling because the scores might all have different distributions, meaning the score with the highest variation would contribute too much to the overall score. Normalizing allows us to equally weight each of the three scores.
+
+```{r echo = FALSE, fig.width=9}
+score_df %>%
+  top_n(40, avg_score) %>%
+  inner_join(spotify_holiday) %>%
+  mutate(track_name = abbreviate(track_name, 40),
+         artist_name = abbreviate(artist_name, 40)) %>%
+  ggplot(aes(reorder(paste(track_name, '-', artist_name), avg_score),
+             avg_score))+
+  geom_col()+
+  coord_flip()+
+  xlab('')+ylab('Normalized Score')+
+  ggtitle('40 Highest Scoring Songs')
 ```
 
 
