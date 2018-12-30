@@ -20,6 +20,11 @@ Recommendation engines impact a large amount of our online lives. The content we
 
 ## The Code: Calculating Cosine Similarity in `R`
 
+```{r}
+cosine_sim <- function(x, y) crossprod(x,y)/sqrt(crossprod(x)*crossprod(y))
+```
+
+
 ## The Data: Recommending Songs
 
 We use data from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/). We're working with a subset of the data (only 10K songs), but that should be enough for us.
@@ -33,6 +38,9 @@ play_data <- "https://static.turi.com/datasets/millionsong/10000.txt" %>%
 song_data <- 'https://static.turi.com/datasets/millionsong/song_data.csv' %>%
   read_csv()
 
+users <- play_data %>%
+  distinct(user)
+
 all_data <- play_data %>%
   group_by(user, song_id) %>%
   summarise(plays = sum(plays, na.rm = TRUE)) %>%
@@ -44,6 +52,15 @@ Here are the first few rows of the data:
 ```{r}
 head(all_data)
 ```
+
+```{r}
+fill_plays <- function(song_df, user_data = users){
+  users %>%
+    left_join(song_df) %>%
+    mutate(plays_indicator = ifelse(is.na(plays), 0, 1))
+}
+```
+
 
 ## Conclusion
 
