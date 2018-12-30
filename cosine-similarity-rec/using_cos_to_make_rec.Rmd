@@ -36,7 +36,8 @@ play_data <- "https://static.turi.com/datasets/millionsong/10000.txt" %>%
   read_tsv(col_names = c('user', 'song_id', 'plays'))
 
 song_data <- 'https://static.turi.com/datasets/millionsong/song_data.csv' %>%
-  read_csv()
+  read_csv() %>%
+  distinct(song_id, title, artist_name)
 
 users <- play_data %>%
   distinct(user)
@@ -53,13 +54,58 @@ Here are the first few rows of the data:
 head(all_data)
 ```
 
+Now, there happen to be a lot of users in this data set, so combining the number of users with songs makes the data a little too unwieldy for this toy example. We're going to filter our dataset so that it's only based on the top 1,000 songs.
+
+```{r cache=TRUE}
+top_1k_songs <- all_data %>%
+    group_by(song_id, title, artist_name) %>%
+    summarise(sum_plays = sum(plays)) %>%
+    ungroup() %>%
+    top_n(1000, sum_plays) %>% 
+    distinct(song_id)
+
+all_data_top_1k <- all_data %>%
+  inner_join(top_1k_songs)
+
+top_1k_wide <- all_data_top_1k %>%
+    ungroup() %>%
+    distinct(user, song_id, plays) %>%
+    spread(song_id, plays, fill = 0)
+
+ratings <- as.matrix(top_1k_wide[,-1])
+
+```
+
 ```{r}
-fill_plays <- function(song_df, user_data = users){
-  users %>%
-    left_join(song_df) %>%
-    mutate(plays_indicator = ifelse(is.na(plays), 0, 1))
+calc_cos_sim <- function(song_code, 
+                         rating_mat = ratings,
+                         songs = song_data){
+  
+  song_col_index <- which(colnames(rating_mat) == song_code)
+  
+  cos_sims <- apply(rating_mat, 2,
+                    FUN = function(y) cosine_sim(rating_mat[,song_col_index],
+                                                 y))
+  
+  data_frame(song_id = names(cos_sims),
+             cos_sim = cos_sims) %>%
+    filter(song_id != song_code) %>% # remove self reference
+    inner_join(songs) %>%
+    arrange(desc(cos_sim))
+  
 }
 ```
+
+We can use the function above to calculate similarities for a few songs.
+
+```{r}
+forgot_about_dre <- 'SOPJLFV12A6701C797'
+
+enter_sandman <- 'SOCHYVZ12A6D4F5908'
+
+come_as_you_are <- 'SODEOCO12A6701E922'
+```
+
 
 
 ## Conclusion
