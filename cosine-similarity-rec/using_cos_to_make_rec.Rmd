@@ -1,0 +1,54 @@
+---
+title: "Using Cosine Similarity to Make Recommendations in R"
+author: "Brad Stieber"
+date: "December 29, 2018"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+Recommendation engines impact a large amount of our online lives. The content we watch on Netflix, the products we purchase on Amazon, and even [the homes we buy](https://www.redfin.com/blog/2013/09/the-end-of-search.html) are all served up using recommendation engines. In this post, I'll run through one of the key metrics used in recommendation engines: the cosine similarity.
+
+## Introduction
+
+## The Math: Cosine Similarity
+
+## The Code: Calculating Cosine Similarity in `R`
+
+## The Data: Recommending Songs
+
+We use data from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/). We're working with a subset of the data (only 10K songs), but that should be enough for us.
+
+```{r echo = TRUE}
+library(tidyverse)
+
+play_data <- "https://static.turi.com/datasets/millionsong/10000.txt" %>%
+  read_tsv(col_names = c('user', 'song_id', 'plays'))
+
+song_data <- 'https://static.turi.com/datasets/millionsong/song_data.csv' %>%
+  read_csv()
+
+all_data <- play_data %>%
+  group_by(user, song_id) %>%
+  summarise(plays = sum(plays, na.rm = TRUE)) %>%
+  inner_join(song_data)
+```
+
+Here are the first few rows of the data:
+
+```{r}
+head(all_data)
+```
+
+## Conclusion
+
+Links:
+
+- [Wikipedia: Cosine Similarity](https://en.wikipedia.org/wiki/Cosine_similarity)
+- [Machine Learning :: Cosine Similarity for Vector Space Models (Part III)](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/)
+- [Introduction to Collaborative Filtering](https://hackernoon.com/introduction-to-recommender-system-part-1-collaborative-filtering-singular-value-decomposition-44c9659c5e75)
