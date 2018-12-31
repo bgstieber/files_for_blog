@@ -12,24 +12,53 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE)
 ```
 
-Recommendation engines impact a large amount of our online lives. The content we watch on Netflix, the products we purchase on Amazon, and even [the homes we buy](https://www.redfin.com/blog/2013/09/the-end-of-search.html) are all served up using recommendation engines. In this post, I'll run through one of the key metrics used in recommendation engines: the cosine similarity.
+Recommendation engines impact a large amount of our online lives. The content we watch on Netflix, the products we purchase on Amazon, and even [the homes we buy](https://www.redfin.com/blog/2013/09/the-end-of-search.html) are all served up using recommendation engines. In this post, I'll run through one of the key metrics used in recommendation engines: cosine similarity.
 
 ## Introduction
 
+There are a few different flavors of recommendation engines. One type is __collaborative filtering__, which relies on the behavior of users to understand and predict the similarity between items. There are two subtypes of collaborative filtering: __user-user__ and __item-item__. In a nutshell, user-user recommendation engines will look for similar users to you, and recommend things that these similar users have liked. Item-item recommendation engines generate predictions based on the similarity of items instead of the similarity of users. Converting an engine from user-user to item-item engines can reduce the amount of computational cost in generating recommendations.
+
+Another type of recommendation engine is __content-based__. Rather than using the behavior of other users, or the similarity between ratings, content-based systems employ information about the items themselves (e.g. genre, starring actors, when the movie was released). Then, a user's behavior is examined to generate a user profile, which tries to find content similar to what's been consumed before based on the characteristics of the new content.
+
+Cosine similarity is helpful for building both types of recommender systems. In this post, we'll be using it to generate song recommendations based on how often users listen to different songs.
+
 ## The Math: Cosine Similarity
 
-## The Code: Calculating Cosine Similarity in `R`
+Growing up, I never really liked geometry. During grad school, I learned how important it was to have a decent grasp of some basic geometric concepts, and I began to appreciate the power of visualizing information to improve geometric understanding.
+
+Cosine similarity is built on the geometric defintion of the [__dot product__](https://en.wikipedia.org/wiki/Dot_product) of two vectors.
+
+$$a \cdot b = a^{T}b = \sum_{i=1}^{n} a_i b_i $$
+Now, we can layer in geometric information
+
+$$a \cdot b = ||a|| \, ||b|| \text{cos}(\theta)$$
+where $\theta$ is the angle between $a$ and $b$ and $||x||$ is the magnitude/length/norm of a vector $x$. From the above expression, we can arrive at cosine similarity:
+
+$$ \text{cos}(\theta) = \frac{a \cdot b}{||a|| \, ||b||}$$
+In `R` this is defined as:
 
 ```{r}
 cosine_sim <- function(x, y) crossprod(x,y)/sqrt(crossprod(x)*crossprod(y))
 ```
+
+Ok, ok, ok, there's the formula, and there's the `R` function, but where's the intuition? What does it all mean?
+
+What I like to focus on in cosine similarity is the angle $\theta$. This basically tells us how far we'd have to move vector $a$ so that it could rest on top of $b$, assuming we can only adjust the orientation of $a$, and have no ability to influence its magnitude. The easier it is to get $a$ on top of $b$, the smaller this angle will be. The smaller $\theta$ is, the larger $\text{cos}(\theta)$ will be. [This blog post](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/) has a great image demonstrating cosine similarity for a few examples.
+
+<br>
+
+![_Image from a 2013 [blog post](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/) by Christian S. Perone_](http://blog.christianperone.com/wp-content/uploads/2013/09/cosinesimilarityfq1.png)
+
+<br>
+
+For the data we'll be looking at in this post, $\text{cos}(\theta)$ will be somewhere betweeen 0 and 1, since the data we're looking at is all non-negative. In some cases, there may be data which is positive _and_ negative, in which case $\text{cos}(\theta)$ will be between -1 and 1, with -1 meaning $a$ and $b$ are perfectly dissimilar and 1 meaning $a$ and $b$ are perfectly similar.
 
 
 ## The Data: Recommending Songs
 
 We use data from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/). We're working with a subset of the data (only 10K songs), but that should be enough for us.
 
-```{r echo = TRUE}
+```{r echo = TRUE, cache = TRUE}
 library(tidyverse)
 
 play_data <- "https://static.turi.com/datasets/millionsong/10000.txt" %>%
@@ -79,7 +108,8 @@ ratings <- as.matrix(top_1k_wide[,-1])
 ```{r}
 calc_cos_sim <- function(song_code, 
                          rating_mat = ratings,
-                         songs = song_data){
+                         songs = song_data,
+                         return_n = 10){
   
   song_col_index <- which(colnames(rating_mat) == song_code)
   
@@ -91,7 +121,8 @@ calc_cos_sim <- function(song_code,
              cos_sim = cos_sims) %>%
     filter(song_id != song_code) %>% # remove self reference
     inner_join(songs) %>%
-    arrange(desc(cos_sim))
+    arrange(desc(cos_sim)) %>%
+    top_n(return_n, cos_sim)
   
 }
 ```
@@ -104,6 +135,8 @@ forgot_about_dre <- 'SOPJLFV12A6701C797'
 enter_sandman <- 'SOCHYVZ12A6D4F5908'
 
 come_as_you_are <- 'SODEOCO12A6701E922'
+
+shots <- 'SOJYBJZ12AB01801D0'
 ```
 
 
@@ -115,3 +148,4 @@ Links:
 - [Wikipedia: Cosine Similarity](https://en.wikipedia.org/wiki/Cosine_similarity)
 - [Machine Learning :: Cosine Similarity for Vector Space Models (Part III)](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/)
 - [Introduction to Collaborative Filtering](https://hackernoon.com/introduction-to-recommender-system-part-1-collaborative-filtering-singular-value-decomposition-44c9659c5e75)
+- [What are Product Recommendation Engines? And the various versions of them?](https://towardsdatascience.com/what-are-product-recommendation-engines-and-the-various-versions-of-them-9dcab4ee26d5)
