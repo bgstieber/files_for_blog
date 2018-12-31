@@ -37,7 +37,7 @@ Cosine similarity is built on the geometric definition of the [__dot product__](
 
 $$a \cdot b = a^{T}b = \sum_{i=1}^{n} a_i b_i $$
 
-You may be wondering what $a$ and $b$ actually represent. If we're trying to recommend certain products, $a$ and $b$ might be the collection of user ratings for each of the products. If we have three customers, $a =[5, 0, 1]$ and $b = [0, 1, 2]$, meaning that the first customer rated $a$ a 5 and did not rate $b$, the second customer did not rate $a$ and gave $b$ a 1, and the third customer rated $a$ a 1 and $b$ a 2. So $a$ and $b$ are vectors which collect information about the items of interest in our analysis.
+You may be wondering what $a$ and $b$ actually represent. If we're trying to recommend certain products, $a$ and $b$ might be the collection of ratings from three users for two products. For example, if $a =[5, 0, 1]$ and $b = [0, 1, 2]$, the first customer rated $a$ a 5 and did not rate $b$, the second customer did not rate $a$ and gave $b$ a 1, and the third customer rated $a$ a 1 and $b$ a 2.
 
 With that out of the way, we can layer in geometric information
 
