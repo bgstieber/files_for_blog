@@ -1,5 +1,5 @@
 ---
-title: "Using Cosine Similarity to Make Recommendations in R"
+title: "Recommending Songs Using Cosine Similarity in R"
 author: "Brad Stieber"
 date: "December 29, 2018"
 output: html_document
@@ -36,12 +36,16 @@ Growing up, I never really liked geometry. During grad school, I learned how imp
 Cosine similarity is built on the geometric definition of the [__dot product__](https://en.wikipedia.org/wiki/Dot_product) of two vectors.
 
 $$a \cdot b = a^{T}b = \sum_{i=1}^{n} a_i b_i $$
-Now, we can layer in geometric information
+
+You may be wondering what $a$ and $b$ actually represent. If we're trying to recommend certain products, $a$ and $b$ might be the collection of user ratings for each of the products. If we have three customers, $a =[5, 0, 1]$ and $b = [0, 1, 2]$, meaning that the first customer rated $a$ a 5 and did not rate $b$, the second customer did not rate $a$ and gave $b$ a 1, and the third customer rated $a$ a 1 and $b$ a 2. So $a$ and $b$ are vectors which collect information about the items of interest in our analysis.
+
+With that out of the way, we can layer in geometric information
 
 $$a \cdot b = ||a|| \, ||b|| \text{cos}(\theta)$$
 where $\theta$ is the angle between $a$ and $b$ and $||x||$ is the magnitude/length/norm of a vector $x$. From the above expression, we can arrive at cosine similarity:
 
 $$ \text{cos}(\theta) = \frac{a \cdot b}{||a|| \, ||b||}$$
+
 In `R` this is defined as:
 
 ```{r}
@@ -165,7 +169,7 @@ come_as_you_are <- 'SODEOCO12A6701E922'
 knitr::kable(calc_cos_sim(come_as_you_are))
 ```
 
-Alright, 2 for 2. One thing to be mindful of when looking at these results is that we're not incorporating _any_ information about the songs themselves. Our engine isn't built using any data about the artist, genre, or other musical characteristics. If we used this information in addition to our user data, we'd have what is called a __hybrid recommendation system__.
+Alright, 2 for 2. One thing to be mindful of when looking at these results is that we're not incorporating _any_ information about the songs themselves. Our engine isn't built using any data about the artist, genre, or other musical characteristics. Additionally, we're not considering any demographic information about the users, and it's fairly easy to see how useful age, gender, and other user-level data could be in making recommendations. If we used this information in addition to our user play data, we'd have what is called a __hybrid recommendation system__.
 
 Finally, we'll recommend songs for our hard-partying friends that like the song "Shots" by LMFAO featuring Lil Jon.
 
@@ -186,7 +190,11 @@ I hope you liked this brief excursion into the world of recommendation engines. 
 
 ### Other Resources
 
+Here are a few great resources if you want to dive deeper into cosine similarity. 
+
 - [Wikipedia: Cosine Similarity](https://en.wikipedia.org/wiki/Cosine_similarity)
 - [Machine Learning :: Cosine Similarity for Vector Space Models (Part III)](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/)
 - [Introduction to Collaborative Filtering](https://hackernoon.com/introduction-to-recommender-system-part-1-collaborative-filtering-singular-value-decomposition-44c9659c5e75)
 - [What are Product Recommendation Engines? And the various versions of them?](https://towardsdatascience.com/what-are-product-recommendation-engines-and-the-various-versions-of-them-9dcab4ee26d5)
+- [Implementing and Understanding Cosine Similarity](https://masongallo.github.io/machine/learning,/python/2016/07/29/cosine-similarity.html)
+- [Series of blog posts about cosine similarity](http://stefansavev.com/blog/cosine-similarity-all-posts/)
