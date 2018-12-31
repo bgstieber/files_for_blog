@@ -33,7 +33,7 @@ library(tidyverse)
 
 Growing up, I never really liked geometry. During grad school, I learned how important it was to have a decent grasp of some basic geometric concepts, and I began to appreciate the power of visualizing information to improve geometric understanding.
 
-Cosine similarity is built on the geometric defintion of the [__dot product__](https://en.wikipedia.org/wiki/Dot_product) of two vectors.
+Cosine similarity is built on the geometric definition of the [__dot product__](https://en.wikipedia.org/wiki/Dot_product) of two vectors.
 
 $$a \cdot b = a^{T}b = \sum_{i=1}^{n} a_i b_i $$
 Now, we can layer in geometric information
@@ -48,7 +48,7 @@ In `R` this is defined as:
 cosine_sim <- function(x, y) crossprod(x,y)/sqrt(crossprod(x)*crossprod(y))
 ```
 
-Ok, ok, ok, there's the formula, and there's the `R` function, but where's the intuition? What does it all mean?
+OK, OK, OK, there's the formula, and there's the `R` function, but where's the intuition? What does it all mean?
 
 What I like to focus on in cosine similarity is the angle $\theta$. This basically tells us how far we'd have to move vector $a$ so that it could rest on top of $b$, assuming we can only adjust the orientation of $a$, and have no ability to influence its magnitude. The easier it is to get $a$ on top of $b$, the smaller this angle will be. The smaller $\theta$ is, the larger $\text{cos}(\theta)$ will be. [This blog post](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/) has a great image demonstrating cosine similarity for a few examples.
 
@@ -58,7 +58,7 @@ What I like to focus on in cosine similarity is the angle $\theta$. This basical
 
 <br>
 
-For the data we'll be looking at in this post, $\text{cos}(\theta)$ will be somewhere betweeen 0 and 1, since the data we're looking at is all non-negative. In some cases, there may be data which is positive _and_ negative, in which case $\text{cos}(\theta)$ will be between -1 and 1, with -1 meaning $a$ and $b$ are perfectly dissimilar and 1 meaning $a$ and $b$ are perfectly similar.
+For the data we'll be looking at in this post, $\text{cos}(\theta)$ will be somewhere between 0 and 1, since the data we're looking at is all non-negative. In some cases, there may be data which is positive _and_ negative, in which case $\text{cos}(\theta)$ will be between -1 and 1, with -1 meaning $a$ and $b$ are perfectly dissimilar and 1 meaning $a$ and $b$ are perfectly similar.
 
 
 ## The Data: Recommending Songs
@@ -66,16 +66,14 @@ For the data we'll be looking at in this post, $\text{cos}(\theta)$ will be some
 We use data from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/). We're working with a subset of the data (only 10K songs), but that should be enough for us.
 
 ```{r echo = TRUE, cache = TRUE}
+# read user play data and song data from the internet
 play_data <- "https://static.turi.com/datasets/millionsong/10000.txt" %>%
   read_tsv(col_names = c('user', 'song_id', 'plays'))
 
 song_data <- 'https://static.turi.com/datasets/millionsong/song_data.csv' %>%
   read_csv() %>%
   distinct(song_id, title, artist_name)
-
-users <- play_data %>%
-  distinct(user)
-
+# join user and song data together
 all_data <- play_data %>%
   group_by(user, song_id) %>%
   summarise(plays = sum(plays, na.rm = TRUE)) %>%
@@ -88,7 +86,7 @@ Here are the first few rows of the data:
 head(all_data)
 ```
 
-Now, there happen to be a lot of users in this data set, so combining the number of users with songs makes the data a little too unwieldy for this toy example. We're going to filter our dataset so that it's only based on the top 1,000 songs.
+Now, there happen to be a lot of users in this data set, so combining the number of users with songs makes the data a little too unwieldy for this toy example. We're going to filter our dataset so that it's only based on the top 1,000 songs. We use the `spread` function to turn our data from being "tall" (one row per user per song) to being "wide" (one row per user, and one column per song).
 
 ```{r cache=TRUE}
 top_1k_songs <- all_data %>%
@@ -109,6 +107,13 @@ top_1k_wide <- all_data_top_1k %>%
 ratings <- as.matrix(top_1k_wide[,-1])
 
 ```
+
+Here's a sample of what the `ratings` matrix looks like:
+
+```{r}
+ratings[1:5, 1:5] # one row per user, one column per song
+```
+
 
 I then wrote a function called `calc_cos_sim`, which will calculate the similarity between a chosen song and the other songs, and recommend 5 new songs for a user to listen to.
 
@@ -137,10 +142,14 @@ calc_cos_sim <- function(song_code,
 
 We can use the function above to calculate similarities for a few songs.
 
+Let's look at the hip-hop classic "Forgot about Dre" first.
+
 ```{r}
 forgot_about_dre <- 'SOPJLFV12A6701C797'
 knitr::kable(calc_cos_sim(forgot_about_dre))
 ```
+
+Each song we recommended is a hip-hop song, which is a good start! Even on this reduced dataset, the engine is making _decent_ recommendations. 
 
 <!--
 ```{r}
@@ -149,20 +158,33 @@ knitr::kable(calc_cos_sim(enter_sandman))
 ```
 -->
 
+The next song is "Come As You Are" by Nirvana. Users who enjoy this song probably like other grunge/rock songs.
+
 ```{r}
 come_as_you_are <- 'SODEOCO12A6701E922'
 knitr::kable(calc_cos_sim(come_as_you_are))
 ```
+
+Alright, 2 for 2. One thing to be mindful of when looking at these results is that we're not incorporating _any_ information about the songs themselves. Our engine isn't built using any data about the artist, genre, or other musical characteristics. If we used this information in addition to our user data, we'd have what is called a __hybrid recommendation system__.
+
+Finally, we'll recommend songs for our hard-partying friends that like the song "Shots" by LMFAO featuring Lil Jon.
 
 ```{r}
 shots <- 'SOJYBJZ12AB01801D0'
 knitr::kable(calc_cos_sim(shots))
 ```
 
+Well, the "16 Candles" result is a little surprising, but this might give us some insight into the demographics of users that like "Shots". The other four recommendations seem pretty solid. 
 
 ## Conclusion
 
-Links:
+Cosine similarity is simple to calculate and is fairly intuitive once some basic geometric concepts are understood. The simplicity of this metric makes it a great first-pass option for recommendation systems, and can be treated as a baseline with which to compare more computationally intensive and/or difficult to understand methods.
+
+Recommendation systems will continue to play a large role in our online lives. I think it can be helpful to understand the components underneath these systems, so that we can treat them less as blackbox oracles and more as the imperfect prediction systems based on data they are.
+
+I hope you liked this brief excursion into the world of recommendation engines. Hopefully you can walk away knowing a little more about why Amazon told you to buy that Hello Kitty backpack!
+
+### Other Resources
 
 - [Wikipedia: Cosine Similarity](https://en.wikipedia.org/wiki/Cosine_similarity)
 - [Machine Learning :: Cosine Similarity for Vector Space Models (Part III)](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/)

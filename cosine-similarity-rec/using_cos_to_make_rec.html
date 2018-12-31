@@ -138,12 +138,12 @@ $(document).ready(function () {
 <div id="the-math-cosine-similarity" class="section level2">
 <h2>The Math: Cosine Similarity</h2>
 <p>Growing up, I never really liked geometry. During grad school, I learned how important it was to have a decent grasp of some basic geometric concepts, and I began to appreciate the power of visualizing information to improve geometric understanding.</p>
-<p>Cosine similarity is built on the geometric defintion of the <a href="https://en.wikipedia.org/wiki/Dot_product"><strong>dot product</strong></a> of two vectors.</p>
+<p>Cosine similarity is built on the geometric definition of the <a href="https://en.wikipedia.org/wiki/Dot_product"><strong>dot product</strong></a> of two vectors.</p>
 <p><span class="math display">\[a \cdot b = a^{T}b = \sum_{i=1}^{n} a_i b_i \]</span> Now, we can layer in geometric information</p>
 <p><span class="math display">\[a \cdot b = ||a|| \, ||b|| \text{cos}(\theta)\]</span> where <span class="math inline">\(\theta\)</span> is the angle between <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> and <span class="math inline">\(||x||\)</span> is the magnitude/length/norm of a vector <span class="math inline">\(x\)</span>. From the above expression, we can arrive at cosine similarity:</p>
 <p><span class="math display">\[ \text{cos}(\theta) = \frac{a \cdot b}{||a|| \, ||b||}\]</span> In <code>R</code> this is defined as:</p>
 <pre class="r"><code>cosine_sim &lt;- function(x, y) crossprod(x,y)/sqrt(crossprod(x)*crossprod(y))</code></pre>
-<p>Ok, ok, ok, there’s the formula, and there’s the <code>R</code> function, but where’s the intuition? What does it all mean?</p>
+<p>OK, OK, OK, there’s the formula, and there’s the <code>R</code> function, but where’s the intuition? What does it all mean?</p>
 <p>What I like to focus on in cosine similarity is the angle <span class="math inline">\(\theta\)</span>. This basically tells us how far we’d have to move vector <span class="math inline">\(a\)</span> so that it could rest on top of <span class="math inline">\(b\)</span>, assuming we can only adjust the orientation of <span class="math inline">\(a\)</span>, and have no ability to influence its magnitude. The easier it is to get <span class="math inline">\(a\)</span> on top of <span class="math inline">\(b\)</span>, the smaller this angle will be. The smaller <span class="math inline">\(\theta\)</span> is, the larger <span class="math inline">\(\text{cos}(\theta)\)</span> will be. <a href="http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/">This blog post</a> has a great image demonstrating cosine similarity for a few examples.</p>
 <p><br></p>
 <div class="figure">
@@ -151,21 +151,19 @@ $(document).ready(function () {
 <p class="caption"><em>Image from a 2013 <a href="http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/">blog post</a> by Christian S. Perone</em></p>
 </div>
 <p><br></p>
-<p>For the data we’ll be looking at in this post, <span class="math inline">\(\text{cos}(\theta)\)</span> will be somewhere betweeen 0 and 1, since the data we’re looking at is all non-negative. In some cases, there may be data which is positive <em>and</em> negative, in which case <span class="math inline">\(\text{cos}(\theta)\)</span> will be between -1 and 1, with -1 meaning <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> are perfectly dissimilar and 1 meaning <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> are perfectly similar.</p>
+<p>For the data we’ll be looking at in this post, <span class="math inline">\(\text{cos}(\theta)\)</span> will be somewhere between 0 and 1, since the data we’re looking at is all non-negative. In some cases, there may be data which is positive <em>and</em> negative, in which case <span class="math inline">\(\text{cos}(\theta)\)</span> will be between -1 and 1, with -1 meaning <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> are perfectly dissimilar and 1 meaning <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> are perfectly similar.</p>
 </div>
 <div id="the-data-recommending-songs" class="section level2">
 <h2>The Data: Recommending Songs</h2>
 <p>We use data from the <a href="https://labrosa.ee.columbia.edu/millionsong/">Million Song Dataset</a>. We’re working with a subset of the data (only 10K songs), but that should be enough for us.</p>
-<pre class="r"><code>play_data &lt;- &quot;https://static.turi.com/datasets/millionsong/10000.txt&quot; %&gt;%
+<pre class="r"><code># read user play data and song data from the internet
+play_data &lt;- &quot;https://static.turi.com/datasets/millionsong/10000.txt&quot; %&gt;%
   read_tsv(col_names = c('user', 'song_id', 'plays'))
 
 song_data &lt;- 'https://static.turi.com/datasets/millionsong/song_data.csv' %&gt;%
   read_csv() %&gt;%
   distinct(song_id, title, artist_name)
-
-users &lt;- play_data %&gt;%
-  distinct(user)
-
+# join user and song data together
 all_data &lt;- play_data %&gt;%
   group_by(user, song_id) %&gt;%
   summarise(plays = sum(plays, na.rm = TRUE)) %&gt;%
@@ -182,7 +180,7 @@ all_data &lt;- play_data %&gt;%
 ## 4 00003a4459f33b929~ SONFEUF12A~     3 Não É Proibido        Marisa Monte 
 ## 5 00003a4459f33b929~ SOVMGXI12A~     1 Hey Mama              Black Eyed P~
 ## 6 00003a4459f33b929~ SOVNPBK12A~     2 Lights Of Ayodhya     Yulara</code></pre>
-<p>Now, there happen to be a lot of users in this data set, so combining the number of users with songs makes the data a little too unwieldy for this toy example. We’re going to filter our dataset so that it’s only based on the top 1,000 songs.</p>
+<p>Now, there happen to be a lot of users in this data set, so combining the number of users with songs makes the data a little too unwieldy for this toy example. We’re going to filter our dataset so that it’s only based on the top 1,000 songs. We use the <code>spread</code> function to turn our data from being “tall” (one row per user per song) to being “wide” (one row per user, and one column per song).</p>
 <pre class="r"><code>top_1k_songs &lt;- all_data %&gt;%
     group_by(song_id, title, artist_name) %&gt;%
     summarise(sum_plays = sum(plays)) %&gt;%
@@ -199,6 +197,20 @@ top_1k_wide &lt;- all_data_top_1k %&gt;%
     spread(song_id, plays, fill = 0)
 
 ratings &lt;- as.matrix(top_1k_wide[,-1])</code></pre>
+<p>Here’s a sample of what the <code>ratings</code> matrix looks like:</p>
+<pre class="r"><code>ratings[1:5, 1:5] # one row per user, one column per song</code></pre>
+<pre><code>##      SOAAVUV12AB0186646 SOABHYV12A6D4F6D0F SOABJBU12A8C13F63F
+## [1,]                  0                  0                  0
+## [2,]                  0                  0                  0
+## [3,]                  0                  0                  0
+## [4,]                  0                  0                  0
+## [5,]                  0                  0                  0
+##      SOACBLB12AB01871C7 SOACIPG12A8AE47E1C
+## [1,]                  0                  0
+## [2,]                  0                  0
+## [3,]                  0                  0
+## [4,]                  0                  0
+## [5,]                  0                  0</code></pre>
 <p>I then wrote a function called <code>calc_cos_sim</code>, which will calculate the similarity between a chosen song and the other songs, and recommend 5 new songs for a user to listen to.</p>
 <pre class="r"><code>calc_cos_sim &lt;- function(song_code, 
                          rating_mat = ratings,
@@ -221,6 +233,7 @@ ratings &lt;- as.matrix(top_1k_wide[,-1])</code></pre>
   
 }</code></pre>
 <p>We can use the function above to calculate similarities for a few songs.</p>
+<p>Let’s look at the hip-hop classic “Forgot about Dre” first.</p>
 <pre class="r"><code>forgot_about_dre &lt;- 'SOPJLFV12A6701C797'
 knitr::kable(calc_cos_sim(forgot_about_dre))</code></pre>
 <table>
@@ -265,6 +278,7 @@ knitr::kable(calc_cos_sim(forgot_about_dre))</code></pre>
 </tr>
 </tbody>
 </table>
+<p>Each song we recommended is a hip-hop song, which is a good start! Even on this reduced dataset, the engine is making <em>decent</em> recommendations.</p>
 <!--
 
 ```r
@@ -283,6 +297,7 @@ SOUBXSF12A6701D23C    0.1289000  You Could Be Mine             Guns N' Roses
 SOIPYPB12A8C1360D4    0.1175952  My Immortal (Album Version)   Evanescence             
 SOIPYPB12A8C1360D4    0.1175952  My Immortal                   Evanescence             
 -->
+<p>The next song is “Come As You Are” by Nirvana. Users who enjoy this song probably like other grunge/rock songs.</p>
 <pre class="r"><code>come_as_you_are &lt;- 'SODEOCO12A6701E922'
 knitr::kable(calc_cos_sim(come_as_you_are))</code></pre>
 <table>
@@ -327,6 +342,8 @@ knitr::kable(calc_cos_sim(come_as_you_are))</code></pre>
 </tr>
 </tbody>
 </table>
+<p>Alright, 2 for 2. One thing to be mindful of when looking at these results is that we’re not incorporating <em>any</em> information about the songs themselves. Our engine isn’t built using any data about the artist, genre, or other musical characteristics. If we used this information in addition to our user data, we’d have what is called a <strong>hybrid recommendation system</strong>.</p>
+<p>Finally, we’ll recommend songs for our hard-partying friends that like the song “Shots” by LMFAO featuring Lil Jon.</p>
 <pre class="r"><code>shots &lt;- 'SOJYBJZ12AB01801D0'
 knitr::kable(calc_cos_sim(shots))</code></pre>
 <table>
@@ -371,16 +388,22 @@ knitr::kable(calc_cos_sim(shots))</code></pre>
 </tr>
 </tbody>
 </table>
+<p>Well, the “16 Candles” result is a little surprising, but this might give us some insight into the demographics of users that like “Shots”. The other four recommendations seem pretty solid.</p>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>Links:</p>
+<p>Cosine similarity is simple to calculate and is fairly intuitive once some basic geometric concepts are understood. The simplicity of this metric makes it a great first-pass option for recommendation systems, and can be treated as a baseline with which to compare more computationally intensive and/or difficult to understand methods.</p>
+<p>Recommendation systems will continue to play a large role in our online lives. I think it can be helpful to understand the components underneath these systems, so that we can treat them less as blackbox oracles and more as the imperfect prediction systems based on data they are.</p>
+<p>I hope you liked this brief excursion into the world of recommendation engines. Hopefully you can walk away knowing a little more about why Amazon told you to buy that Hello Kitty backpack!</p>
+<div id="other-resources" class="section level3">
+<h3>Other Resources</h3>
 <ul>
 <li><a href="https://en.wikipedia.org/wiki/Cosine_similarity">Wikipedia: Cosine Similarity</a></li>
 <li><a href="http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/">Machine Learning :: Cosine Similarity for Vector Space Models (Part III)</a></li>
 <li><a href="https://hackernoon.com/introduction-to-recommender-system-part-1-collaborative-filtering-singular-value-decomposition-44c9659c5e75">Introduction to Collaborative Filtering</a></li>
 <li><a href="https://towardsdatascience.com/what-are-product-recommendation-engines-and-the-various-versions-of-them-9dcab4ee26d5">What are Product Recommendation Engines? And the various versions of them?</a></li>
 </ul>
+</div>
 </div>
 
 
