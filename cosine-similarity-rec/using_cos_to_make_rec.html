@@ -132,6 +132,8 @@ $(document).ready(function () {
 <p>There are a few different flavors of recommendation engines. One type is <strong>collaborative filtering</strong>, which relies on the behavior of users to understand and predict the similarity between items. There are two subtypes of collaborative filtering: <strong>user-user</strong> and <strong>item-item</strong>. In a nutshell, user-user recommendation engines will look for similar users to you, and recommend things that these similar users have liked. Item-item recommendation engines generate predictions based on the similarity of items instead of the similarity of users. Converting an engine from user-user to item-item engines can reduce the amount of computational cost in generating recommendations.</p>
 <p>Another type of recommendation engine is <strong>content-based</strong>. Rather than using the behavior of other users, or the similarity between ratings, content-based systems employ information about the items themselves (e.g. genre, starring actors, when the movie was released). Then, a user’s behavior is examined to generate a user profile, which tries to find content similar to what’s been consumed before based on the characteristics of the new content.</p>
 <p>Cosine similarity is helpful for building both types of recommender systems. In this post, we’ll be using it to generate song recommendations based on how often users listen to different songs.</p>
+<p>The only package we’ll need for this post is:</p>
+<pre class="r"><code>library(tidyverse)</code></pre>
 </div>
 <div id="the-math-cosine-similarity" class="section level2">
 <h2>The Math: Cosine Similarity</h2>
@@ -154,9 +156,7 @@ $(document).ready(function () {
 <div id="the-data-recommending-songs" class="section level2">
 <h2>The Data: Recommending Songs</h2>
 <p>We use data from the <a href="https://labrosa.ee.columbia.edu/millionsong/">Million Song Dataset</a>. We’re working with a subset of the data (only 10K songs), but that should be enough for us.</p>
-<pre class="r"><code>library(tidyverse)
-
-play_data &lt;- &quot;https://static.turi.com/datasets/millionsong/10000.txt&quot; %&gt;%
+<pre class="r"><code>play_data &lt;- &quot;https://static.turi.com/datasets/millionsong/10000.txt&quot; %&gt;%
   read_tsv(col_names = c('user', 'song_id', 'plays'))
 
 song_data &lt;- 'https://static.turi.com/datasets/millionsong/song_data.csv' %&gt;%
@@ -172,27 +172,16 @@ all_data &lt;- play_data %&gt;%
   inner_join(song_data)</code></pre>
 <p>Here are the first few rows of the data:</p>
 <pre class="r"><code>head(all_data)</code></pre>
-<pre><code>##                                       user            song_id plays
-## 1 00003a4459f33b92906be11abe0e93efc423c0ff SOJJRVI12A6D4FBE49     1
-## 2 00003a4459f33b92906be11abe0e93efc423c0ff SOKJWZB12A6D4F9487     4
-## 3 00003a4459f33b92906be11abe0e93efc423c0ff SOMZHIH12A8AE45D00     3
-## 4 00003a4459f33b92906be11abe0e93efc423c0ff SONFEUF12AAF3B47E3     3
-## 5 00003a4459f33b92906be11abe0e93efc423c0ff SOVMGXI12AF72A80B0     1
-## 6 00003a4459f33b92906be11abe0e93efc423c0ff SOVNPBK12A6D4F6A67     2
-##                                                    title
-## 1                    Only You (Illuminate Album Version)
-## 2 Do You Want To Know Love (Pray For Rain Album Version)
-## 3                                  You're A Wolf (Album)
-## 4                                         Não É Proibido
-## 5                                               Hey Mama
-## 6                                      Lights Of Ayodhya
-##          artist_name
-## 1 David Crowder*Band
-## 2                PFR
-## 3           Sea Wolf
-## 4       Marisa Monte
-## 5    Black Eyed Peas
-## 6             Yulara</code></pre>
+<pre><code>## # A tibble: 6 x 5
+## # Groups:   user [1]
+##   user               song_id     plays title                 artist_name  
+##   &lt;chr&gt;              &lt;chr&gt;       &lt;int&gt; &lt;chr&gt;                 &lt;chr&gt;        
+## 1 00003a4459f33b929~ SOJJRVI12A~     1 Only You (Illuminate~ David Crowde~
+## 2 00003a4459f33b929~ SOKJWZB12A~     4 Do You Want To Know ~ PFR          
+## 3 00003a4459f33b929~ SOMZHIH12A~     3 You're A Wolf (Album) Sea Wolf     
+## 4 00003a4459f33b929~ SONFEUF12A~     3 Não É Proibido        Marisa Monte 
+## 5 00003a4459f33b929~ SOVMGXI12A~     1 Hey Mama              Black Eyed P~
+## 6 00003a4459f33b929~ SOVNPBK12A~     2 Lights Of Ayodhya     Yulara</code></pre>
 <p>Now, there happen to be a lot of users in this data set, so combining the number of users with songs makes the data a little too unwieldy for this toy example. We’re going to filter our dataset so that it’s only based on the top 1,000 songs.</p>
 <pre class="r"><code>top_1k_songs &lt;- all_data %&gt;%
     group_by(song_id, title, artist_name) %&gt;%
@@ -210,17 +199,19 @@ top_1k_wide &lt;- all_data_top_1k %&gt;%
     spread(song_id, plays, fill = 0)
 
 ratings &lt;- as.matrix(top_1k_wide[,-1])</code></pre>
+<p>I then wrote a function called <code>calc_cos_sim</code>, which will calculate the similarity between a chosen song and the other songs, and recommend 5 new songs for a user to listen to.</p>
 <pre class="r"><code>calc_cos_sim &lt;- function(song_code, 
                          rating_mat = ratings,
                          songs = song_data,
-                         return_n = 10){
-  
+                         return_n = 5) {
+  # find our song
   song_col_index &lt;- which(colnames(rating_mat) == song_code)
-  
+  # calculate cosine similarity for each song based on 
+  # number of plays for users
   cos_sims &lt;- apply(rating_mat, 2,
                     FUN = function(y) cosine_sim(rating_mat[,song_col_index],
                                                  y))
-  
+  # return results
   data_frame(song_id = names(cos_sims),
              cos_sim = cos_sims) %&gt;%
     filter(song_id != song_code) %&gt;% # remove self reference
@@ -231,12 +222,155 @@ ratings &lt;- as.matrix(top_1k_wide[,-1])</code></pre>
 }</code></pre>
 <p>We can use the function above to calculate similarities for a few songs.</p>
 <pre class="r"><code>forgot_about_dre &lt;- 'SOPJLFV12A6701C797'
+knitr::kable(calc_cos_sim(forgot_about_dre))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">song_id</th>
+<th align="right">cos_sim</th>
+<th align="left">title</th>
+<th align="left">artist_name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">SOZCWQA12A6701C798</td>
+<td align="right">0.3561683</td>
+<td align="left">The Next Episode</td>
+<td align="left">Dr. Dre / Snoop Dogg</td>
+</tr>
+<tr class="even">
+<td align="left">SOHEMBB12A6701E907</td>
+<td align="right">0.2507195</td>
+<td align="left">Superman</td>
+<td align="left">Eminem / Dina Rae</td>
+</tr>
+<tr class="odd">
+<td align="left">SOWGXOP12A6701E93A</td>
+<td align="right">0.1596885</td>
+<td align="left">Without Me</td>
+<td align="left">Eminem</td>
+</tr>
+<tr class="even">
+<td align="left">SOJTDUS12A6D4FBF0E</td>
+<td align="right">0.1591929</td>
+<td align="left">None Shall Pass (Main)</td>
+<td align="left">Aesop Rock</td>
+</tr>
+<tr class="odd">
+<td align="left">SOSKDTM12A6701C795</td>
+<td align="right">0.1390476</td>
+<td align="left">What’s The Difference</td>
+<td align="left">Dr. Dre / Eminem / Alvin Joiner</td>
+</tr>
+</tbody>
+</table>
+<!--
 
-enter_sandman &lt;- 'SOCHYVZ12A6D4F5908'
+```r
+enter_sandman <- 'SOCHYVZ12A6D4F5908'
+knitr::kable(calc_cos_sim(enter_sandman))
+```
 
-come_as_you_are &lt;- 'SODEOCO12A6701E922'
 
-shots &lt;- 'SOJYBJZ12AB01801D0'</code></pre>
+
+song_id                 cos_sim  title                         artist_name             
+-------------------  ----------  ----------------------------  ------------------------
+SOLMIUU12A58A79C99    0.2211738  Another Day In Paradise       Phil Collins            
+SOYGHUM12AB018139C    0.2190192  Bad Company                   Five Finger Death Punch 
+SOZDGEW12A8C13E748    0.2104946  One                           Metallica               
+SOUBXSF12A6701D23C    0.1289000  You Could Be Mine             Guns N' Roses           
+SOIPYPB12A8C1360D4    0.1175952  My Immortal (Album Version)   Evanescence             
+SOIPYPB12A8C1360D4    0.1175952  My Immortal                   Evanescence             
+-->
+<pre class="r"><code>come_as_you_are &lt;- 'SODEOCO12A6701E922'
+knitr::kable(calc_cos_sim(come_as_you_are))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">song_id</th>
+<th align="right">cos_sim</th>
+<th align="left">title</th>
+<th align="left">artist_name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">SOCPMIK12A6701E96D</td>
+<td align="right">0.3903533</td>
+<td align="left">The Man Who Sold The World</td>
+<td align="left">Nirvana</td>
+</tr>
+<tr class="even">
+<td align="left">SONNNEH12AB01827DE</td>
+<td align="right">0.3568732</td>
+<td align="left">Lithium</td>
+<td align="left">Nirvana</td>
+</tr>
+<tr class="odd">
+<td align="left">SOLOFYI12A8C145F8D</td>
+<td align="right">0.1958162</td>
+<td align="left">Heart Shaped Box</td>
+<td align="left">Nirvana</td>
+</tr>
+<tr class="even">
+<td align="left">SOVDLVT12A58A7B988</td>
+<td align="right">0.1186160</td>
+<td align="left">Behind Blue Eyes</td>
+<td align="left">Limp Bizkit</td>
+</tr>
+<tr class="odd">
+<td align="left">SOWBYZF12A6D4F9424</td>
+<td align="right">0.0952245</td>
+<td align="left">Fakty</td>
+<td align="left">Horkyze Slyze</td>
+</tr>
+</tbody>
+</table>
+<pre class="r"><code>shots &lt;- 'SOJYBJZ12AB01801D0'
+knitr::kable(calc_cos_sim(shots))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">song_id</th>
+<th align="right">cos_sim</th>
+<th align="left">title</th>
+<th align="left">artist_name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">SOWEHOM12A6BD4E09E</td>
+<td align="right">0.2551851</td>
+<td align="left">16 Candles</td>
+<td align="left">The Crests</td>
+</tr>
+<tr class="even">
+<td align="left">SOLQXDJ12AB0182E47</td>
+<td align="right">0.1866648</td>
+<td align="left">Yes</td>
+<td align="left">LMFAO</td>
+</tr>
+<tr class="odd">
+<td align="left">SOSZJFV12AB01878CB</td>
+<td align="right">0.1387647</td>
+<td align="left">Teach Me How To Dougie</td>
+<td align="left">California Swag District</td>
+</tr>
+<tr class="even">
+<td align="left">SOYGKNI12AB0187E6E</td>
+<td align="right">0.1173063</td>
+<td align="left">All I Do Is Win (feat. T-Pain_ Ludacris_ Snoop Dogg &amp; Rick Ross)</td>
+<td align="left">DJ Khaled</td>
+</tr>
+<tr class="odd">
+<td align="left">SOUSMXX12AB0185C24</td>
+<td align="right">0.1012716</td>
+<td align="left">OMG</td>
+<td align="left">Usher featuring will.i.am</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>

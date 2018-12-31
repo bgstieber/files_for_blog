@@ -22,6 +22,13 @@ Another type of recommendation engine is __content-based__. Rather than using th
 
 Cosine similarity is helpful for building both types of recommender systems. In this post, we'll be using it to generate song recommendations based on how often users listen to different songs.
 
+The only package we'll need for this post is:
+
+```{r}
+library(tidyverse)
+```
+
+
 ## The Math: Cosine Similarity
 
 Growing up, I never really liked geometry. During grad school, I learned how important it was to have a decent grasp of some basic geometric concepts, and I began to appreciate the power of visualizing information to improve geometric understanding.
@@ -59,8 +66,6 @@ For the data we'll be looking at in this post, $\text{cos}(\theta)$ will be some
 We use data from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/). We're working with a subset of the data (only 10K songs), but that should be enough for us.
 
 ```{r echo = TRUE, cache = TRUE}
-library(tidyverse)
-
 play_data <- "https://static.turi.com/datasets/millionsong/10000.txt" %>%
   read_tsv(col_names = c('user', 'song_id', 'plays'))
 
@@ -105,18 +110,21 @@ ratings <- as.matrix(top_1k_wide[,-1])
 
 ```
 
+I then wrote a function called `calc_cos_sim`, which will calculate the similarity between a chosen song and the other songs, and recommend 5 new songs for a user to listen to.
+
 ```{r}
 calc_cos_sim <- function(song_code, 
                          rating_mat = ratings,
                          songs = song_data,
-                         return_n = 10){
-  
+                         return_n = 5) {
+  # find our song
   song_col_index <- which(colnames(rating_mat) == song_code)
-  
+  # calculate cosine similarity for each song based on 
+  # number of plays for users
   cos_sims <- apply(rating_mat, 2,
                     FUN = function(y) cosine_sim(rating_mat[,song_col_index],
                                                  y))
-  
+  # return results
   data_frame(song_id = names(cos_sims),
              cos_sim = cos_sims) %>%
     filter(song_id != song_code) %>% # remove self reference
@@ -131,14 +139,25 @@ We can use the function above to calculate similarities for a few songs.
 
 ```{r}
 forgot_about_dre <- 'SOPJLFV12A6701C797'
-
-enter_sandman <- 'SOCHYVZ12A6D4F5908'
-
-come_as_you_are <- 'SODEOCO12A6701E922'
-
-shots <- 'SOJYBJZ12AB01801D0'
+knitr::kable(calc_cos_sim(forgot_about_dre))
 ```
 
+<!--
+```{r}
+enter_sandman <- 'SOCHYVZ12A6D4F5908'
+knitr::kable(calc_cos_sim(enter_sandman))
+```
+-->
+
+```{r}
+come_as_you_are <- 'SODEOCO12A6701E922'
+knitr::kable(calc_cos_sim(come_as_you_are))
+```
+
+```{r}
+shots <- 'SOJYBJZ12AB01801D0'
+knitr::kable(calc_cos_sim(shots))
+```
 
 
 ## Conclusion
