@@ -190,11 +190,13 @@ I hope you liked this brief excursion into the world of recommendation engines. 
 
 ### Other Resources
 
-Here are a few great resources if you want to dive deeper into cosine similarity. 
+Here are a few great resources if you want to dive deeper into cosine similarity and/or recommendation systems. 
 
-- [Wikipedia: Cosine Similarity](https://en.wikipedia.org/wiki/Cosine_similarity)
 - [Machine Learning :: Cosine Similarity for Vector Space Models (Part III)](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/)
-- [Introduction to Collaborative Filtering](https://hackernoon.com/introduction-to-recommender-system-part-1-collaborative-filtering-singular-value-decomposition-44c9659c5e75)
-- [What are Product Recommendation Engines? And the various versions of them?](https://towardsdatascience.com/what-are-product-recommendation-engines-and-the-various-versions-of-them-9dcab4ee26d5)
-- [Implementing and Understanding Cosine Similarity](https://masongallo.github.io/machine/learning,/python/2016/07/29/cosine-similarity.html)
 - [Series of blog posts about cosine similarity](http://stefansavev.com/blog/cosine-similarity-all-posts/)
+- [Wikipedia: Cosine Similarity](https://en.wikipedia.org/wiki/Cosine_similarity)
+- [Implementing and Understanding Cosine Similarity](https://masongallo.github.io/machine/learning,/python/2016/07/29/cosine-similarity.html)
+- [What are Product Recommendation Engines? And the various versions of them?](https://towardsdatascience.com/what-are-product-recommendation-engines-and-the-various-versions-of-them-9dcab4ee26d5)
+- [Introduction to Collaborative Filtering](https://hackernoon.com/introduction-to-recommender-system-part-1-collaborative-filtering-singular-value-decomposition-44c9659c5e75)
+
+
