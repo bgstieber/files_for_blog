@@ -1,7 +1,7 @@
 ---
 title: "Recommending Songs Using Cosine Similarity in R"
 author: "Brad Stieber"
-date: "December 29, 2018"
+date: ""
 output: html_document
 ---
 
@@ -12,15 +12,17 @@ knitr::opts_chunk$set(echo = TRUE,
                       message = FALSE)
 ```
 
-Recommendation engines impact a large amount of our online lives. The content we watch on Netflix, the products we purchase on Amazon, and even [the homes we buy](https://www.redfin.com/blog/2013/09/the-end-of-search.html) are all served up using recommendation engines. In this post, I'll run through one of the key metrics used in recommendation engines: cosine similarity.
+Recommendation engines have a huge impact on our online lives. The content we watch on Netflix, the products we purchase on Amazon, and even [the homes we buy](https://www.redfin.com/blog/2013/09/the-end-of-search.html) are all served up using these algorithms. In this post, I'll run through one of the key metrics used in developing recommendation engines: __cosine similarity__.
 
-## Introduction
+First, I'll give a brief overview of some vocabulary we'll need to understand recommendation systems. Then, I'll look at the math behind cosine similarity. Finally, I'm going to use cosine similarity to build a recommendation engine for songs in R.
 
-There are a few different flavors of recommendation engines. One type is __collaborative filtering__, which relies on the behavior of users to understand and predict the similarity between items. There are two subtypes of collaborative filtering: __user-user__ and __item-item__. In a nutshell, user-user recommendation engines will look for similar users to you, and recommend things that these similar users have liked. Item-item recommendation engines generate predictions based on the similarity of items instead of the similarity of users. Converting an engine from user-user to item-item engines can reduce the amount of computational cost in generating recommendations.
+## The Basics: Recommendation Engine Vocabulary
 
-Another type of recommendation engine is __content-based__. Rather than using the behavior of other users, or the similarity between ratings, content-based systems employ information about the items themselves (e.g. genre, starring actors, when the movie was released). Then, a user's behavior is examined to generate a user profile, which tries to find content similar to what's been consumed before based on the characteristics of the new content.
+There are a few different flavors of recommendation engines. One type is __collaborative filtering__, which relies on the behavior of users to understand and predict the similarity between items. There are two subtypes of collaborative filtering: __user-user__ and __item-item__. In a nutshell, user-user engines will look for similar users to you, and suggest things that these users have liked (_users like you also bought X_). Item-item recommendation engines generate suggestions based on the similarity of items instead of the similarity of users (_you bought X and Y, maybe you'd like Z too_). Converting an engine from user-user to item-item can reduce the computational cost of generating recommendations.
 
-Cosine similarity is helpful for building both types of recommender systems. In this post, we'll be using it to generate song recommendations based on how often users listen to different songs.
+Another type of recommendation engine is __content-based__. Rather than using the behavior of other users or the similarity between ratings, content-based systems employ information about the items themselves (e.g. genre, starring actors, or when the movie was released). Then, a user's behavior is examined to generate a user profile, which tries to find content similar to what's been consumed before based on the characteristics of the content.
+
+Cosine similarity is helpful for building both types of recommender systems, as it provides a way of measuring how similar users, items, or content is. In this post, we'll be using it to generate song recommendations based on how often users listen to different songs.
 
 The only package we'll need for this post is:
 
@@ -31,30 +33,29 @@ library(tidyverse)
 
 ## The Math: Cosine Similarity
 
-Growing up, I never really liked geometry. During grad school, I learned how important it was to have a decent grasp of some basic geometric concepts, and I began to appreciate the power of visualizing information to improve geometric understanding.
+Cosine similarity is built on the geometric definition of the [__dot product__](https://en.wikipedia.org/wiki/Dot_product) of two vectors:
 
-Cosine similarity is built on the geometric definition of the [__dot product__](https://en.wikipedia.org/wiki/Dot_product) of two vectors.
+$$\text{dot_product}(a, b) =a \cdot b = a^{T}b = \sum_{i=1}^{n} a_i b_i $$
 
-$$a \cdot b = a^{T}b = \sum_{i=1}^{n} a_i b_i $$
-
-You may be wondering what $a$ and $b$ actually represent. If we're trying to recommend certain products, $a$ and $b$ might be the collection of ratings from three users for two products. For example, if $a =[5, 0, 1]$ and $b = [0, 1, 2]$, the first customer rated $a$ a 5 and did not rate $b$, the second customer did not rate $a$ and gave $b$ a 1, and the third customer rated $a$ a 1 and $b$ a 2.
+You may be wondering what $a$ and $b$ actually represent. If we're trying to recommend certain products, $a$ and $b$ might be the collection of ratings for two products based on the input from $n$ customers. For example, if $a =[5, 0, 1]$ and $b = [0, 1, 2]$, the first customer rated $a$ a 5 and did not rate $b$, the second customer did not rate $a$ and gave $b$ a 1, and the third customer rated $a$ a 1 and $b$ a 2.
 
 With that out of the way, we can layer in geometric information
 
 $$a \cdot b = ||a|| \, ||b|| \text{cos}(\theta)$$
+
 where $\theta$ is the angle between $a$ and $b$ and $||x||$ is the magnitude/length/norm of a vector $x$. From the above expression, we can arrive at cosine similarity:
 
-$$ \text{cos}(\theta) = \frac{a \cdot b}{||a|| \, ||b||}$$
+$$\text{cosine_similarity} = \text{cos}(\theta) = \frac{a \cdot b}{||a|| \, ||b||}$$
 
 In `R` this is defined as:
 
 ```{r}
-cosine_sim <- function(x, y) crossprod(x,y)/sqrt(crossprod(x)*crossprod(y))
+cosine_sim <- function(a, b) crossprod(a,b)/sqrt(crossprod(a)*crossprod(b))
 ```
 
-OK, OK, OK, there's the formula, and there's the `R` function, but where's the intuition? What does it all mean?
+OK, OK, OK, you've seen the formula, and I even wrote an `R` function, but where's the intuition? What does it all mean?
 
-What I like to focus on in cosine similarity is the angle $\theta$. This basically tells us how far we'd have to move vector $a$ so that it could rest on top of $b$, assuming we can only adjust the orientation of $a$, and have no ability to influence its magnitude. The easier it is to get $a$ on top of $b$, the smaller this angle will be. The smaller $\theta$ is, the larger $\text{cos}(\theta)$ will be. [This blog post](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/) has a great image demonstrating cosine similarity for a few examples.
+What I like to focus on in cosine similarity is the angle $\theta$. $\theta$ tells us how far we'd have to move vector $a$ so that it could rest on top of $b$. This assumes we can only adjust the orientation of $a$, and have no ability to influence its magnitude. The easier it is to get $a$ on top of $b$, the smaller this angle will be, and the more similar $a$ and $b$ will be. Furthermore, the smaller $\theta$ is, the larger $\text{cos}(\theta)$ will be. [This blog post](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/) has a great image demonstrating cosine similarity for a few examples.
 
 <br>
 
@@ -62,12 +63,11 @@ What I like to focus on in cosine similarity is the angle $\theta$. This basical
 
 <br>
 
-For the data we'll be looking at in this post, $\text{cos}(\theta)$ will be somewhere between 0 and 1, since the data we're looking at is all non-negative. In some cases, there may be data which is positive _and_ negative, in which case $\text{cos}(\theta)$ will be between -1 and 1, with -1 meaning $a$ and $b$ are perfectly dissimilar and 1 meaning $a$ and $b$ are perfectly similar.
+For the data we'll be looking at in this post, $\text{cos}(\theta)$ will be somewhere between 0 and 1, since user play data is all non-negative. A value of 1 will indicate perfect similarity, and 0 will indicate the two vectors are unrelated. In other applications, there may be data which is positive _and_ negative. For these cases, $\text{cos}(\theta)$ will be between -1 and 1, with -1 meaning $a$ and $b$ are perfectly dissimilar and 1 meaning $a$ and $b$ are perfectly similar.
 
+## The Data: Songs from the Million Song Dataset
 
-## The Data: Recommending Songs
-
-We use data from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/). We're working with a subset of the data (only 10K songs), but that should be enough for us.
+We use a subset of the data from the [Million Song Dataset](https://labrosa.ee.columbia.edu/millionsong/). The data only has 10K songs, but that should be enough for this exercise.
 
 ```{r echo = TRUE, cache = TRUE}
 # read user play data and song data from the internet
@@ -84,13 +84,13 @@ all_data <- play_data %>%
   inner_join(song_data)
 ```
 
-Here are the first few rows of the data:
+Here are the first few rows of the data. The important variable is `plays`, which measures how many times a certain user has listened to a song. We'll be using this variable to generate recommendations.
 
 ```{r}
-head(all_data)
+knitr::kable(head(all_data, 4))
 ```
 
-Now, there happen to be a lot of users in this data set, so combining the number of users with songs makes the data a little too unwieldy for this toy example. We're going to filter our dataset so that it's only based on the top 1,000 songs. We use the `spread` function to turn our data from being "tall" (one row per user per song) to being "wide" (one row per user, and one column per song).
+There are `r scales::comma(length(unique(play_data$user)))` users in this data set, so combining the number of users with songs makes the data a little too unwieldy for this toy example. I'm going to filter our dataset so that it's only based on the 1,000 most-played songs. We use the `spread` function to turn our data from being "tall" (one row per user per song) to being "wide" (one row per user, and one column per song).
 
 ```{r cache=TRUE}
 top_1k_songs <- all_data %>%
@@ -112,14 +112,17 @@ ratings <- as.matrix(top_1k_wide[,-1])
 
 ```
 
+This results in having play data for `r scales::comma(length(unique(all_data_top_1k$user)))` users and `r scales::comma(length(unique(all_data_top_1k$song_id)))` songs. `r scales::percent(mean(ratings > 0))` of user-song combinations have `plays` greater than 0.
+
 Here's a sample of what the `ratings` matrix looks like:
 
 ```{r}
-ratings[1:5, 1:5] # one row per user, one column per song
+ratings[1:5, 1:3] # one row per user, one column per song
 ```
 
+## The Result: Making Song Recommendations
 
-I then wrote a function called `calc_cos_sim`, which will calculate the similarity between a chosen song and the other songs, and recommend 5 new songs for a user to listen to.
+I wrote a function called `calc_cos_sim`, which will calculate the similarity between a chosen song and the other songs, and recommend 5 new songs for a user to listen to. From start to finish, this only took about 20 lines of code, indicating how easy it can be to spin up a recommendation engine.
 
 ```{r}
 calc_cos_sim <- function(song_code, 
@@ -130,23 +133,23 @@ calc_cos_sim <- function(song_code,
   song_col_index <- which(colnames(rating_mat) == song_code)
   # calculate cosine similarity for each song based on 
   # number of plays for users
+  # apply(..., 2) iterates over the columns of a matrix
   cos_sims <- apply(rating_mat, 2,
-                    FUN = function(y) cosine_sim(rating_mat[,song_col_index],
-                                                 y))
+                    FUN = function(y) 
+                      cosine_sim(rating_mat[,song_col_index], y))
   # return results
-  data_frame(song_id = names(cos_sims),
-             cos_sim = cos_sims) %>%
+  data_frame(song_id = names(cos_sims), cos_sim = cos_sims) %>%
     filter(song_id != song_code) %>% # remove self reference
     inner_join(songs) %>%
     arrange(desc(cos_sim)) %>%
-    top_n(return_n, cos_sim)
-  
+    top_n(return_n, cos_sim) %>%
+    select(song_id, title, artist_name, cos_sim)
 }
 ```
 
-We can use the function above to calculate similarities for a few songs.
+We can use the function above to calculate similarities and generate recommendations for a few songs.
 
-Let's look at the hip-hop classic "Forgot about Dre" first.
+Let's look at the hip-hop classic ["Forgot about Dre"](https://www.youtube.com/watch?v=QFcv5Ma8u8k) first.
 
 ```{r}
 forgot_about_dre <- 'SOPJLFV12A6701C797'
@@ -162,35 +165,35 @@ knitr::kable(calc_cos_sim(enter_sandman))
 ```
 -->
 
-The next song is "Come As You Are" by Nirvana. Users who enjoy this song probably like other grunge/rock songs.
+The next song is ["Come As You Are" by Nirvana](https://www.youtube.com/watch?v=vabnZ9-ex7o). Users who like this song probably listen to other grunge/rock songs.
 
 ```{r}
 come_as_you_are <- 'SODEOCO12A6701E922'
 knitr::kable(calc_cos_sim(come_as_you_are))
 ```
 
-Alright, 2 for 2. One thing to be mindful of when looking at these results is that we're not incorporating _any_ information about the songs themselves. Our engine isn't built using any data about the artist, genre, or other musical characteristics. Additionally, we're not considering any demographic information about the users, and it's fairly easy to see how useful age, gender, and other user-level data could be in making recommendations. If we used this information in addition to our user play data, we'd have what is called a __hybrid recommendation system__.
+Alright, 2 for 2. One thing to be mindful of when looking at these results is that we're not incorporating _any_ information about the songs themselves. Our engine isn't built using any data about the artist, genre, or other musical characteristics. Additionally, we're not considering any demographic information about the users, and it's fairly easy to see how useful age, gender, and other user-level data could be in making recommendations. If we used this information in addition to our user play data, we'd have what is called a [__hybrid recommendation system__](https://www.math.uci.edu/icamp/courses/math77b/lecture_12w/pdfs/Chapter%2005%20-%20Hybrid%20recommendation%20approaches.pdf)).
 
-Finally, we'll recommend songs for our hard-partying friends that like the song "Shots" by LMFAO featuring Lil Jon.
+Finally, we'll recommend songs for our hard-partying friends that like the song ["Shots" by LMFAO featuring Lil Jon](https://www.youtube.com/watch?v=XNtTEibFvlQ) (__that video is not for the faint of heart__).
 
 ```{r}
 shots <- 'SOJYBJZ12AB01801D0'
 knitr::kable(calc_cos_sim(shots))
 ```
 
-Well, the "16 Candles" result is a little surprising, but this might give us some insight into the demographics of users that like "Shots". The other four recommendations seem pretty solid. 
+Well, the "16 Candles" result is a little surprising, but this might give us some insight into the demographics of users that like "Shots". The other four recommendations seem pretty solid, I guess. 
 
 ## Conclusion
 
 Cosine similarity is simple to calculate and is fairly intuitive once some basic geometric concepts are understood. The simplicity of this metric makes it a great first-pass option for recommendation systems, and can be treated as a baseline with which to compare more computationally intensive and/or difficult to understand methods.
 
-Recommendation systems will continue to play a large role in our online lives. I think it can be helpful to understand the components underneath these systems, so that we can treat them less as blackbox oracles and more as the imperfect prediction systems based on data they are.
+I think that recommendation systems will continue to play a large role in our online lives. It can be helpful to understand the components underneath these systems, so that we treat them less as blackbox oracles and more as the imperfect prediction systems based on data they are.
 
-I hope you liked this brief excursion into the world of recommendation engines. Hopefully you can walk away knowing a little more about why Amazon told you to buy that Hello Kitty backpack!
+I hope you liked this brief excursion into the world of recommendation engines. Hopefully you can walk away knowing a little more about why Amazon, Netflix, and other platforms recommend the content they do.
 
 ### Other Resources
 
-Here are a few great resources if you want to dive deeper into cosine similarity and/or recommendation systems. 
+Here are a few great resources if you want to dive deeper into recommendation systems and cosine similarity. 
 
 - [Machine Learning :: Cosine Similarity for Vector Space Models (Part III)](http://blog.christianperone.com/2013/09/machine-learning-cosine-similarity-for-vector-space-models-part-iii/)
 - [Series of blog posts about cosine similarity](http://stefansavev.com/blog/cosine-similarity-all-posts/)
