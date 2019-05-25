@@ -30,6 +30,14 @@ scrape_pga <- function(url){
     .[[2]]
 }
 
+full_pga_data <- function(urls, years){
+  map2(urls, years, 
+       ~ scrape_pga(.x) %>% mutate(year = .y)) %>%
+    bind_rows() %>%
+    as_tibble()
+}
+
+
 ball_striking_urls <- data_frame(years = 2004:2019) %>%
   mutate(total_driving = glue("https://www.pgatour.com/stats/stat.129.{years}.html"),
          sg_tee_to_green = glue("https://www.pgatour.com/stats/stat.02674.{years}.html"),
@@ -41,6 +49,38 @@ ball_striking_urls <- data_frame(years = 2004:2019) %>%
          avg_driv_dist = glue("https://www.pgatour.com/stats/stat.101.{years}.html"),
          pct_total_money_won = glue("https://www.pgatour.com/stats/stat.02447.{years}.html"))
 
+
+get_full_data <- FALSE
+
+if(get_full_data){
+  
+  all_ball_striking_data <- ball_striking_urls %>%
+    gather(measure, url, -years) %>%
+    rowwise() %>%
+    mutate(data = I(list(full_pga_data(url, years) %>% 
+                           mutate(measure = measure))))
+  
+  data_list <- all_ball_striking_data$data
+  
+  names(data_list) <- paste0(all_ball_striking_data$measure,
+                             "_",
+                             all_ball_striking_data$years)
+  
+}
+
+write_full_data <- FALSE
+
+if(write_full_data & get_full_data){
+  
+  for(i in 1:length(data_list)){
+    
+    write_csv(x = data_list[[i]],
+              path = file.path("data",
+                               paste0(names(data_list)[i], ".csv")))
+    
+  }
+  
+}
 
 sg_around_green <- map2(ball_striking_urls$sg_around_green, 
                    ball_striking_urls$years, 
