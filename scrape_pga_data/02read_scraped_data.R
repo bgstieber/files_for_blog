@@ -1,5 +1,13 @@
 library(tidyverse)
 
+fix_money <- function(data){
+  data %>%
+    mutate_at(vars(contains("OFFICIAL MONEY WON")),
+              as.character) %>%
+    mutate_at(vars(contains("POTENTIAL MONEY")),
+              as.character)
+}
+
 file_names <- dir("data//")
 
 file_groups <- file_names %>%
@@ -17,4 +25,20 @@ all_pga_data <- file_groups %>%
   rowwise() %>%
   mutate(data = map(value, read_csv))
 
+pga1 <- all_pga_data %>%
+  filter(group != "pct_total_money_won") %>%
+  split(.$group) %>%
+  map(~bind_rows(.x$data))
 
+
+pga2 <- all_pga_data %>%
+  filter(group == "pct_total_money_won") %>%
+  .$data %>%
+  map(fix_money) %>%
+  bind_rows()
+
+pga1$pct_total_money_won <- pga2
+
+
+map2(names(pga1), pga1, 
+     ~write_csv(.y, paste0("data//", .x, "_FULL.csv")))
