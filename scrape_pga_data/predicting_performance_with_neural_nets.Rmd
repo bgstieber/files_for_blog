@@ -1,0 +1,12 @@
+---
+title: 'Predicting Golfer Performance: Using Neural Networks and Keras in R'
+author: "Brad Stieber"
+date: "6/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
