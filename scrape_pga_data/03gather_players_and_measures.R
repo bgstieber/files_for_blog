@@ -97,7 +97,7 @@ money_and_sg2 <- money_and_sg %>%
   filter(EVENTS >= 10) %>%
   arrange(year) %>%
   group_by(`PLAYER NAME`) %>%
-  mutate_at(vars(scaled_money:`SG:PUTT`),
+  mutate_at(vars(year, scaled_money:`SG:PUTT`),
             list(lag_1 = lag1, lag_2 = lag2, lag_3 = lag3)) %>%
   mutate_at(vars(scaled_money:`SG:PUTT`),
             list(lag12_delta = lag12_delta,
@@ -112,6 +112,10 @@ full_model_data <- money_and_sg2 %>%
          contains("lag")) %>%
   na.omit() %>%
   filter(year <= 2018) %>%
+  filter((year == (year_lag_1 + 1)),
+         (year == (year_lag_2 + 2)),
+         (year == (year_lag_3 + 3))) %>%
+  select(-year_lag_1, -year_lag_2, -year_lag_3) %>%
   group_by(year) %>%
   mutate(rank_money = percent_rank(money_won)) %>%
   mutate(quartile_group = ifelse(
@@ -121,7 +125,7 @@ full_model_data <- money_and_sg2 %>%
   ungroup() %>%
   mutate(money_per_event = money_won / EVENTS,
          log_money_per_event = log(money_per_event),
-         scaled_money_per_event = money_scaled / EVENTS)
+         scaled_money_per_event = scaled_money / EVENTS)
 
 write_data <- FALSE
 
@@ -153,6 +157,12 @@ train_data <- full_model_data[training_samps,]
 
 train_X <- train_data %>%
   select(contains("lag"))
+
+train_X_lag1 <- train_data %>%
+  select(contains("lag_1"))
+
+train_X_lag1_2 <- train_data %>%
+  select(contains("lag_1"), contains("lag_2"), contains("lag12_delta"))
 
 train_X_mat <- as.matrix(train_X)
 
@@ -192,14 +202,6 @@ preds_glmn_flag <- preds_glmn >= 0.5
 library(randomForest)
 library(e1071)
 ## random forest training
-
-rf_tune <- tune.randomForest(
-                x = train_X_mat,
-                y = train_y_top50_perc_flag_factor,
-                ntree = c(250, 500, 750, 1000),
-                mtry = c(3, 5, 7, 9))
-
-rf_tune_best <- best.randomForest(rf_tune)
 
 rf1 <- randomForest(x = train_X_mat,
                     y = train_y_top50_perc_flag_factor,
