@@ -93,15 +93,22 @@ rf_lag1_2 <- randomForest(x = train_X_mat_lag1_2,
 
 
 # train neural net
+
+min_max_matrix <- function(mat){
+  apply(mat, 2, FUN = function(x) (x - min(x)) / (max(x) - min(x)))
+}
+
 model <- keras_model_sequential()
 
 model %>%
-  layer_dense(units = 64, activation = 'relu') %>%
-  layer_dropout(rate = .15) %>%
   layer_dense(units = 32, activation = 'relu') %>%
-  layer_dropout(rate = .15) %>%
+  layer_dropout(rate = .25) %>%
   layer_dense(units = 16, activation = 'relu') %>%
-  layer_dropout(rate = .15) %>%
+  layer_dropout(rate = .25) %>%
+  layer_dense(units = 8, activation = 'relu') %>%
+  layer_dropout(rate = .25) %>%
+  layer_dense(units = 4, activation = 'relu') %>%
+  layer_dropout(rate = .25) %>%
   layer_dense(units = 1, activation = "sigmoid")
 
 model %>% compile(
@@ -115,5 +122,5 @@ model %>%
       as.matrix(train_y_top50_perc_binary),
       validation_data = list(test_X_mat,
                              as.matrix(test_y_top50_perc_binary)),
-      epochs = 20,
-      batch_size = 16)
+      epochs = 100,
+      batch_size = 8)
