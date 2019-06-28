@@ -4,6 +4,12 @@ library(e1071)
 library(randomForest)
 library(keras)
 
+check_accuracy <- function(actual_labels, pred_labels){
+  tt <- table(actual_labels, pred_labels) 
+  
+  sum(diag(tt)) / sum(tt)
+}
+
 full_model_data <- read_csv("data//modeling_data.csv")
 
 set.seed(1)
@@ -64,6 +70,7 @@ cv_glmn_full <- cv.glmnet(x = train_X_mat,
                           family = 'binomial',
                           nlambda = 500)
 
+
 cv_glmn_lag1 <- cv.glmnet(x = train_X_mat_lag1,
                           y = train_y_top50_perc_flag,
                           family = 'binomial',
@@ -74,22 +81,58 @@ cv_glmn_lag1_2 <- cv.glmnet(x = train_X_mat_lag1_2,
                           family = 'binomial',
                           nlambda = 500)
 
+lambda_glmn <- 0.035
+
+glm_full <- glmnet(x = train_X_mat,
+                   y = train_y_top50_perc_flag,
+                   family = 'binomial',
+                   lambda = lambda_glmn)
+
+check_accuracy(test_y_top50_perc_flag,
+               predict(glm_full, newx = test_X_mat, type = 'class'))
+
+
+glm_lag1 <- glmnet(x = train_X_mat_lag1,
+                   y = train_y_top50_perc_flag,
+                   family = 'binomial',
+                   lambda = lambda_glmn)
+
+check_accuracy(test_y_top50_perc_flag,
+               predict(glm_lag1, newx = test_X_mat_lag1, type = 'class'))
+
+glm_lag2 <- glmnet(x = train_X_mat_lag1_2,
+                   y = train_y_top50_perc_flag,
+                   family = 'binomial',
+                   lambda = lambda_glmn)
+
+check_accuracy(test_y_top50_perc_flag,
+               predict(glm_lag2, newx = test_X_mat_lag1_2, type = 'class'))
+
 # train randomForest models
 rf_full <- randomForest(x = train_X_mat,
                         y = train_y_top50_perc_flag_factor,
                         ntree = 1000,
                         importance = TRUE)
 
+check_accuracy(test_y_top50_perc_flag_factor,
+               predict(rf_full, newdata = test_X_mat))
+
 rf_lag1 <- randomForest(x = train_X_mat_lag1,
                         y = train_y_top50_perc_flag_factor,
                         ntree = 1000,
                         importance = TRUE)
+
+check_accuracy(test_y_top50_perc_flag_factor,
+               predict(rf_lag1, newdata = test_X_mat_lag1))
+
 
 rf_lag1_2 <- randomForest(x = train_X_mat_lag1_2,
                           y = train_y_top50_perc_flag_factor,
                           ntree = 1000,
                           importance = TRUE)
 
+check_accuracy(test_y_top50_perc_flag_factor,
+               predict(rf_lag1_2, newdata = test_X_mat_lag1_2))
 
 
 # train neural net
@@ -101,12 +144,12 @@ min_max_matrix <- function(mat){
 model <- keras_model_sequential()
 
 model %>%
-  layer_dense(units = 64, activation = 'relu') %>%
+  layer_dense(units = 32, activation = 'relu') %>%
   layer_dropout(rate = .5) %>%
   layer_dense(units = 16, activation = 'relu') %>%
   layer_dropout(rate = .3) %>%
-  layer_dense(units = 16, activation = 'relu') %>%
-  layer_dropout(rate = .1) %>%
+  # layer_dense(units = 16, activation = 'relu') %>%
+  # layer_dropout(rate = .1) %>%
   layer_dense(units = 1, activation = "sigmoid")
 
 model %>% compile(
@@ -122,3 +165,6 @@ model %>%
                              as.matrix(test_y_top50_perc_binary)),
       epochs = 25,
       batch_size = 8)
+
+check_accuracy(test_y_top50_perc_binary, 
+               predict(model, x = test_X_mat) >= 0.5)
