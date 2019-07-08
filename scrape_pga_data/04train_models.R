@@ -144,12 +144,13 @@ min_max_matrix <- function(mat){
 model <- keras_model_sequential()
 
 model %>%
+  layer_dense(units = 64, activation = 'relu',
+              input_shape = dim(train_X_mat)[2]) %>%
+  layer_dropout(rate = .5) %>%
   layer_dense(units = 32, activation = 'relu') %>%
   layer_dropout(rate = .5) %>%
   layer_dense(units = 16, activation = 'relu') %>%
-  layer_dropout(rate = .3) %>%
-  # layer_dense(units = 16, activation = 'relu') %>%
-  # layer_dropout(rate = .1) %>%
+  layer_dropout(rate = .5) %>%
   layer_dense(units = 1, activation = "sigmoid")
 
 model %>% compile(
@@ -163,7 +164,7 @@ model %>%
       as.matrix(train_y_top50_perc_binary),
       validation_data = list(test_X_mat,
                              as.matrix(test_y_top50_perc_binary)),
-      epochs = 25,
+      epochs = 50,
       batch_size = 8)
 
 check_accuracy(test_y_top50_perc_binary, 
