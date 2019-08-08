@@ -97,7 +97,7 @@ money_and_sg2 <- money_and_sg %>%
   filter(EVENTS >= 10) %>%
   arrange(year) %>%
   group_by(`PLAYER NAME`) %>%
-  mutate_at(vars(year, scaled_money:`SG:PUTT`),
+  mutate_at(vars(year, scaled_money:`SG:PUTT`, EVENTS),
             list(lag_1 = lag1, lag_2 = lag2, lag_3 = lag3)) %>%
   mutate_at(vars(scaled_money:`SG:PUTT`),
             list(lag12_delta = lag12_delta,

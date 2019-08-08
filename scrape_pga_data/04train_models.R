@@ -12,6 +12,10 @@ check_accuracy <- function(actual_labels, pred_labels){
 
 full_model_data <- read_csv("data//modeling_data.csv")
 
+full_model_data <- full_model_data %>%
+  mutate_at(vars(starts_with("EVENTS_lag")),
+            scale)
+
 set.seed(1)
 
 training_samps <- sample(nrow(full_model_data),
@@ -81,7 +85,7 @@ cv_glmn_lag1_2 <- cv.glmnet(x = train_X_mat_lag1_2,
                           family = 'binomial',
                           nlambda = 500)
 
-lambda_glmn <- 0.035
+lambda_glmn <- 0.015
 
 glm_full <- glmnet(x = train_X_mat,
                    y = train_y_top50_perc_flag,
@@ -146,9 +150,9 @@ model <- keras_model_sequential()
 model %>%
   layer_dense(units = 64, activation = 'relu',
               input_shape = dim(train_X_mat)[2]) %>%
-  layer_dropout(rate = .5) %>%
+  layer_dropout(rate = .25) %>%
   layer_dense(units = 32, activation = 'relu') %>%
-  layer_dropout(rate = .5) %>%
+  layer_dropout(rate = .25) %>%
   layer_dense(units = 16, activation = 'relu') %>%
   layer_dropout(rate = .5) %>%
   layer_dense(units = 1, activation = "sigmoid")
