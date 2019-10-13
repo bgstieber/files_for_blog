@@ -75,8 +75,12 @@ def get_data_from_review(url, decode = True):
      time.sleep(3) # sleep for three seconds to avoid hitting too often
      
      
- 
- 
- 
- 
- 
+ review_df = pd.DataFrame.from_records(review_data,
+                                       columns = ["recommendation",
+                                                  "fish", "potato",
+                                                  "tartar", "bread",
+                                                  "misc", "review"])
+    
+full_data = pd.concat([review_info, review_df], axis = 1)
+
+full_data.to_csv("full_review_data.csv",index = False)
