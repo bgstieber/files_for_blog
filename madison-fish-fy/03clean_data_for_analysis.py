@@ -30,3 +30,4 @@ for i in range(fish_data.shape[0]):
 fish_data = fish_data.assign(polarity = polarity)
 fish_data = fish_data.assign(subjectivity = subjectivity)
 
+fish_data.to_csv("review_analysis_data.csv", index = False)
