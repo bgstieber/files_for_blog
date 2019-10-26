@@ -1,5 +1,6 @@
 library(tidyverse)
 library(tidytext)
+library(zoo)
 
 review_data <- read_csv("review_analysis_data.csv")
 
@@ -33,8 +34,25 @@ monthly_summary <- review_data %>%
             recommend_indicator = sum(recommend_indicator),
             recommend_numeric = sum(recommend_numeric),
             length_written = sum(review_length),
-            avg_polarity = mean(polarity))
+            avg_polarity = mean(polarity)) %>%
+  ungroup() %>%
+  mutate_all(list('rollmean_6' = ~ rollmean(., k = 7, fill = NA)))
 
+
+monthly_summary %>%
+  ggplot(aes(review_month_start_date, count_review))+
+  geom_line(alpha = 0.5)+
+  geom_hline(aes(yintercept = mean(count_review)),linetype = 'dashed')+
+  geom_line(aes(y = count_review_rollmean_6), colour = 'blue', size = 1.2)
+
+
+
+monthly_summary %>%
+  ggplot(aes(review_month_start_date, percent_recommended))+
+  geom_line(alpha = 0.5)+
+  geom_hline(aes(yintercept = mean(percent_recommended)),linetype = 'dashed')+
+  geom_line(aes(y = percent_recommended_rollmean_6),
+            colour = 'blue', size = 1.2)
 
 review_data_distinct %>%
   filter(review_length >= 100) %>%
