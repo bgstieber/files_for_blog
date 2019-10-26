@@ -11,6 +11,8 @@ review_data <- review_data %>%
                                         ifelse(grepl("not", recommendation),
                                                      "not recommend", "recommend"))),
          review_date = lubridate::mdy(review_date)) %>%
+  mutate(recommend_indicator = ifelse(recommendation %in% c("highly recommend",
+                                                            "recommend"), 1,0)) %>%
   filter(!is.na(review)) # get rid of NA reviews
 
 review_data_distinct <- review_data %>%
