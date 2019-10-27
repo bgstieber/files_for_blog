@@ -78,3 +78,28 @@ glm1 <- glm(recommend_indicator ~ polarity,
             data = review_data_distinct %>%
               filter(review_length >= 100),
             family = 'binomial')
+
+
+
+tokenized_by_recommend <- review_data_distinct %>%
+  filter(review_length >= 100) %>%
+  select(review, recommend_indicator) %>%
+  mutate(recommend_indicator = ifelse(recommend_indicator == 1, 'Y', 'N')) %>%
+  unnest_tokens(word, review) %>%
+  anti_join(stop_words)
+
+count_total <- tokenized_by_recommend %>%
+  group_by(recommend_indicator) %>%
+  summarise(total = n())
+
+frequency <- tokenized_by_recommend %>%
+  count(word, recommend_indicator) %>%
+  group_by(word) %>%
+  filter(sum(n) >= 10) %>%
+  ungroup() %>%
+  spread(recommend_indicator, n, fill = 0) %>%
+  mutate_if(is.numeric, list(~(. + 1) / (sum(.) + 1))) %>%
+  mutate(logratio = log(Y / N)) %>%
+  arrange(desc(logratio))
+
+
