@@ -1,0 +1,118 @@
+---
+title: '7 Tips for Delivering a Great Data Science Presentation'
+author: "Brad Stieber"
+date: ""
+output: html_document
+---
+
+Delivering a great data science presentation can seem daunting. By no means am I a communications expert, but I have presented my fair share of talks to a diverse group of audiences. Through my experience, I've developed a few easy-to-remember tips to hopefully make your next data science presentation your best yet. 
+
+Without further ado, here are __seven tips for delivering a great data science presentation__.
+
+### 1. Practice, practice, practice
+
+This is the most important tip I can give to anyone. Practicing your presentation (in front of colleagues, friends, family, or the mirror) is one of the best ways to make sure you'll feel comfortable on the day of your talk. In my opinion, it's the best way to "stress-test" your talk and make sure you're prepared. 
+
+By practicing multiple times, you can find portions of your presentation that can be edited, enhanced, or eliminated. By presenting to others and taking their feedback seriously, you can prepare yourself for your real audience and the questions they might have.
+
+A corollary of __practice, practice, practice__, is __perfect practice makes perfect__. In your practice talks, try to simulate the environment of your talk as close as possible. It may help to deliver your practice talk while standing, dress up for your practice talk, or even practice in a public space if you expect your room to be noisy.
+
+### 2. Talk about what you know, but don't be afraid to branch out a little
+
+Another way to feel more comfortable is to make sure you're comfortable with the material you're presenting. I've been to a few talks where it was clear that the presenter wasn't entirely confident with the subject of their talk. Data science is a broad field, so it's nearly impossible to be an expert in _everything_. Even though you _probably_ can't be an expert in _everything_, you can be knowledgeable about _something_. Talk about that something!
+
+That being said, delivering a presentation _can_ be an excellent way to familiarize yourself with a topic you haven't explored in depth. Using the pressure of delivering a presentation may help you learn something you've been struggling to learn. 
+
+### 3. Look yourself in the mirror and say "I'm not an impostor"
+
+[Impostor syndrome] is real and it sucks.
+
+One of my favorite posters growing up was this one:
+
+<!-- ![expert_in_anything_was_once_a_beginner]() -->
+
+We're all at different levels of developing our skills. I've found that some of my biggest data science aha moments come from having conversations with people outside of the field. Sometimes, knowing too much _can_ be a bad thing, especially when it introduces rigidity or bias to a problem-solving strategy.
+
+No matter what level you're at, __I guarantee that you can provide useful information to your audience__.
+
+### 4. Put yourself in the shoes of an audience member
+
+If you were attending your talk, what would you want to learn? how would you expect the presentation to be delivered? how much information do you think you can absorb?
+
+By taking an empathetic approach to understand the preferences of your audience, you can better prepare your talk and make it as effective as possible. 
+
+One of my favorite (and most critical) ways to evaluate my own presentation is to ask myself "so what?" or "why should I care?" for each slide in my deck. If the slide can't pass that test, I either remove it or edit it until it does. It's probably an extreme approach, but I like doing this because it ensures that I've taken every step I can to reduce any irrelevant sections from my talk.
+
+### 5. Play your game, not anyone else's
+
+One of the most notable data presentations is [this one]() from Hans Rosling. He's engaging, dynamic, and entertaining. His presentation style seems effortless. He makes data fun!
+
+Although I'd like to give presentations like Hans Rosling, I know I can't right now. The best I can do is to present in the style that best fits me. By no means does this mean I've resigned to delivering flat, boring, and dry talks. Instead, I stay realistic and try to do the best that I can do, not the best Hans Rosling could do.
+
+Speaking of being realistic...
+
+### 6. Set realistic expectations, strive to meet them, and hold yourself accountable
+
+Another way to say this is to __set yourself up for success, not disappointment__.
+
+Here's an example. 
+
+For my first presentation at a professional conference, the conference organizers provided ways to promote your session through social media and email. I thought this was really cool, but I had no interest taking part in these promotional activities. I had already committed to delivering my first talk at a professional conference, which took a lot of time to prepare for. I set a goal of delivering the best talk I could, and promoting my session was not part of my plan to achieve this goal. I stayed focus on my primary goal, and avoided getting distracted by anything else.
+
+Here are a few different ways of turning unrealistic goals into realistic and attainable ones.
+
+```{r echo = FALSE}
+Unrealistic <- c(
+  "Deliver the best damn talk anyone has ever seen",
+  "Make people fall out of their chairs laughing",
+  "Make my twenty minute talk last exactly twenty minutes",
+  "BLOW MINDS",
+  "Be the next Hans Rosling"
+)
+
+Realistic <- c(
+  "Deliver a strong talk, providing useful information to those in attendance",
+  "Have a few punch lines that make at least one person laugh/chuckle/smirk",
+  "Make my twenty minute talk last about 20 minutes, without sacrificing material or interfering with others' presentations",
+  "Provide a new and accessible way of framing or thinking about a problem",
+  "Deliver an engaging presentation, without seeming inauthentic"
+)
+
+knitr::kable(data.frame(Unrealistic, Realistic, stringsAsFactors = FALSE))
+```
+
+### 7. Take audience feedback and questions seriously, and use them to learn and improve
+
+This tip doesn't apply to delivering your presentation, it's about your _next_ presentation.
+
+After you've finished your talk, do an analysis of your presentation.
+
+- What went well?
+- What could have been improved?
+- How engaged was your audience?
+  + An indicator I use to judge engagement are how many people laugh at one of my lame jokes and how many people ask questions
+- What questions were asked?
+  + You can use these questions to understand how well you conveyed your points and how engaging your presentation was.
+- Did you receive any feedback or constructive criticism on your content, delivery, and presentation style?
+
+You can learn a lot just by paying attention to how your audience received you and your own perception of your performance.
+
+Just like some machine learning algorithms get better at minimizing a loss function through iteration after iteration, you can improve your presentation through actively learning and iterating on your presentation style.
+
+# Wrapping up
+
+Just to recap, here are my tips for a great data science presentation:
+
+1. Practice, practice, practice
+2. Talk about what you know
+3. Look yourself in the mirror and say "I'm not an impostor"
+4. Put yourself in the shoes of an audience member
+5. Play your game, not anyone else's
+6. Set realistic expectations, strive to meet them, and hold yourself accountable
+7. TAke audience feedback and questions seriously, and use them to learn and improve
+
+
+
+Do you have any tips for giving a great talk? If so, go ahead and leave them in the comments below!
+
+
