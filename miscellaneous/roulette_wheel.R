@@ -2,9 +2,9 @@
 ## https://jamesmccaffrey.wordpress.com/2019/10/28/roulette-wheel-selection-for-multi-armed-bandit-problems
 ## for inspiration
 
-roulette_wheel <- function(coins, 
+roulette_wheel <- function(coins = 40, 
                            starts = 5,
-                           true_prob = c(0.3, .5, .7)){
+                           true_prob = c(0.3, 0.5, 0.7)){
   
   if (coins < (length(true_prob) * starts)){
     stop("To generate a starting distribution, each machine must be",
