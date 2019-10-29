@@ -23,16 +23,15 @@ roulette_wheel <- function(coins = 40,
   # create simulation data.frame
   sim_df <- data.frame(machine = seq_along(true_prob),
                        true_probabilities = true_prob,
-                       observered_probs = probs,
+                       observed_probs = probs,
                        successes = SS,
                        failures = FF,
                        plays = SS + FF,
                        machine_played = NA,
                        coins_left = coins)
-  
+  # initialize before while loop
   sim_list <- vector('list', length = coins)
   i <- 1
-  
   # play until we run out of original coins
   while(coins > 0){
     # which machine to play?
@@ -51,7 +50,7 @@ roulette_wheel <- function(coins = 40,
     # update simulation data.frame (very inefficient)
     sim_list[[i]] <- data.frame(machine = seq_along(true_prob),
                                 true_probabilities = true_prob,
-                                observered_probs = probs,
+                                observed_probs = probs,
                                 successes = SS,
                                 failures = FF,
                                 plays = SS + FF,
