@@ -6,8 +6,14 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
+
+```{r}
+library(tidyverse)
+theme_set(theme_bw())
+```
+
 
 # Introduction 
 
@@ -15,15 +21,15 @@ One of my favorite [data science blogs](https://jamesmccaffrey.wordpress.com/) c
 
 I really liked his post, and decided to take a look at the algorithm he described and code up a function to do the simulation in R.
 
-__Note:__ this is strictly an implementation of Dr. McCaffrey's ideas from his blog post, and should not be taken as my own
+__Note:__ this is strictly an implementation of Dr. McCaffrey's ideas from his blog post, and should not be taken as my own.
 
 # Background
 
-The basic idea of a [multi-armed bandit](https://en.wikipedia.org/wiki/Multi-armed_bandit) is that you have a fixed number of resources (e.g. money at a casino) and you have a number of competing places where you can allocate those resources (e.g. four slot machines at the casino). These allocations occur sequentially, so in the casino example, we choose a slot machine, observe the success or failure from our play, and then make the next allocation decision.
+The basic idea of a [multi-armed bandit](https://en.wikipedia.org/wiki/Multi-armed_bandit) is that you have a fixed number of resources (e.g. money at a casino) and you have a number of competing places where you can allocate those resources (e.g. four slot machines at the casino). These allocations occur sequentially, so in the casino example, we choose a slot machine, observe the success or failure from our play, and then make the next allocation decision. Since we're data scientists at a casino, hopefully we're using the information we're gathering to make better gambling decisions (is that an oxymoron?).
 
 We want to choose the best place to allocate our resources, and maximize our reward for each allocation. However, we should shy away from a greedy strategy (just play the winner), because it doesn't allow us to explore our other options.
 
-There are [different strategies](https://en.wikipedia.org/wiki/Multi-armed_bandit) for choosing where to allocate your next resource. One of the more popular choices is Thomson sampling, which usually involves sampling from a Beta distribution, and using the results of that sampling to determine your next allocation (out of scope for this blog post!).
+There are [different strategies](https://en.wikipedia.org/wiki/Multi-armed_bandit) for choosing where to allocate your next resource. One of the more popular choices is Thompson sampling, which usually involves sampling from a Beta distribution, and using the results of that sampling to determine your next allocation (out of scope for this blog post!).
 
 # Code: `roulette_wheel`
 
@@ -45,7 +51,7 @@ knitr::kable(
 
 And our draw from the random uniform was 0.7, we'd pick the third arm.
 
-We then continue this process (playing a slot machine, observing the outcome, recalcuating observed probabilities, and picking the next slot machine) until we run out of coins.
+We then continue this process (playing a slot machine, observing the outcome, recalculating observed probabilities, and picking the next slot machine) until we run out of coins.
 
 ```{r echo = TRUE}
 roulette_wheel <- function(coins = 40, 
@@ -131,11 +137,72 @@ rw1 <- roulette_wheel(coins = 5000,
 knitr::kable(rw1[rw1$coins_left == 0,]) # show last play
 ```
 
+Let's look at how the observed probabilities changed over time:
+
+```{r fig.width = 8, fig.height=6}
+library(scales)
+
+p1 <- rw1 %>%
+  ggplot(aes(40 + max(coins_left) - coins_left, observed_probs))+
+  geom_hline(aes(yintercept = true_probabilities, colour = factor(machine)),
+             linetype = 'dashed')+
+  geom_line(aes(colour = factor(machine)), size = 1.2)+
+  scale_colour_viridis_d(name = "Machine")
+
+p1 <- p1 +
+  xlab("Simulation")+
+  scale_y_continuous("Chance of Success", labels = percent)+
+  ggtitle("How did observed probabilities of success change during the simulation?",
+          subtitle = 'Dashed line represent true probabilities of success')
+
+p1
+```
+
+And how did our plays for each machine accumulate through time?
+
+```{r fig.width=8, fig.height=6}
+p2 <- rw1 %>%
+  ggplot(aes(40 + max(coins_left) - coins_left, plays))+
+  geom_line(aes(colour = factor(machine)), size = 1.2)+
+  scale_colour_viridis_d(name = "Machine")
+
+p2 <- p2 +
+  xlab("Simulation")+
+  scale_y_continuous("Cumulative # of Plays", labels = comma)+
+  ggtitle("How did cumulative number of plays change during the simulation?")
+
+p2
+```
+
+Boring! If we run a smaller number of variations, we might get a better sense of variation in our number of plays.
+
+```{r echo = TRUE}
+set.seed(123)
+rw2 <- roulette_wheel(coins = 100, 
+                      starts = 5, 
+                      true_prob = c(0.1, 0.25, 0.5, 0.65))
+```
+
+```{r}
+p3 <- rw2 %>%
+  ggplot(aes(20 + max(coins_left) - coins_left, plays))+
+  geom_line(aes(colour = factor(machine)), size = 1.2)+
+  scale_colour_viridis_d(name = "Machine")
+
+p3 <- p3 +
+  xlab("Simulation")+
+  scale_y_continuous("Cumulative # of Plays", labels = comma)+
+  ggtitle("How did cumulative number of plays change during the simulation?")
+
+p3
+```
+
+We can see that machine 1 was never played after the warm start, which represents one potential drawback of this approach.
 
 # Conclusion
 
-This was a fun exercise for me, and it reminded me of a presentation I did in graduate school about this exact topic. I also wrote a [similar function](https://github.com/bgstieber/files_for_blog/blob/master/miscellaneous/roulette_wheel.py) in Python, and was moderately successful at that (it runs faster than my R function, but I'm less confident in how "pythonic" it is).
+This was a fun exercise for me, and it reminded me of a [presentation](https://github.com/bgstieber/files_for_blog/blob/master/miscellaneous/MultiArmedBandits.pdf) I did in graduate school about a very similar topic. I also wrote a [roulette wheel function](https://github.com/bgstieber/files_for_blog/blob/master/miscellaneous/roulette_wheel.py) in Python, and was moderately successful at that (it runs faster than my R function, but I'm less confident in how "pythonic" it is).
 
-My biggest concern with this implementation is the potential situation in which our warm start results in all failures for a given slot machine. If the machine fails across the warm start, it will not be selected for the rest of the simulation. To offset this, you could add a little "jitter" (technical term: epsilon) to the observed probabilities at each iteration, or you could add another random uniform variable that pulls a random lever, rather than the one determined by the simulation.
+My biggest concern with this implementation is the potential situation in which our warm start results in all failures for a given slot machine. If the machine fails across the warm start, it will not be selected for the rest of the simulation. To offset this, you could add a little "jitter" (technical term: epsilon) to the observed probabilities at each iteration. Another option would be to generate a second random uniform variable, and if that value is very small, you that pull a random lever, rather than the one determined by the simulation.
 
 
