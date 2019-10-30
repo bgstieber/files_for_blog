@@ -1,0 +1,141 @@
+---
+title: 'Roulette Wheel for Multi-Armed Bandits: A Simulation in R'
+author: "Brad Stieber"
+date: "10/29/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Introduction 
+
+One of my favorite [data science blogs](https://jamesmccaffrey.wordpress.com/) comes from James McCaffrey, a software engineer and researcher at Microsoft. He recently wrote a [blog post](https://jamesmccaffrey.wordpress.com/2019/10/28/roulette-wheel-selection-for-multi-armed-bandit-problems/) on a method for allocating turns in a multi-armed bandit problem.
+
+I really liked his post, and decided to take a look at the algorithm he described and code up a function to do the simulation in R.
+
+__Note:__ this is strictly an implementation of Dr. McCaffrey's ideas from his blog post, and should not be taken as my own
+
+# Background
+
+The basic idea of a [multi-armed bandit](https://en.wikipedia.org/wiki/Multi-armed_bandit) is that you have a fixed number of resources (e.g. money at a casino) and you have a number of competing places where you can allocate those resources (e.g. four slot machines at the casino). These allocations occur sequentially, so in the casino example, we choose a slot machine, observe the success or failure from our play, and then make the next allocation decision.
+
+We want to choose the best place to allocate our resources, and maximize our reward for each allocation. However, we should shy away from a greedy strategy (just play the winner), because it doesn't allow us to explore our other options.
+
+There are [different strategies](https://en.wikipedia.org/wiki/Multi-armed_bandit) for choosing where to allocate your next resource. One of the more popular choices is Thomson sampling, which usually involves sampling from a Beta distribution, and using the results of that sampling to determine your next allocation (out of scope for this blog post!).
+
+# Code: `roulette_wheel`
+
+The following function implements the roulette wheel allocation, for a flexible number of slot machines.
+
+The function starts by generating a warm start with the data. We need to gather information about our different slot machines, so we allocate a small number of resources to each one to collect information. After we do this, we start the real allocation. We pick a winner based on how its cumulative probability compares to a draw from a random uniform distribution.
+
+So, if our observed success probabilities are
+
+```{r}
+knitr::kable(
+  data.frame(
+    machine = 1:3,
+    observed_prob = c(.2, .3, .5),
+    cumulative_prob = cumsum(c(.2, .3, .5))
+  )
+)
+```
+
+And our draw from the random uniform was 0.7, we'd pick the third arm.
+
+We then continue this process (playing a slot machine, observing the outcome, recalcuating observed probabilities, and picking the next slot machine) until we run out of coins.
+
+```{r echo = TRUE}
+roulette_wheel <- function(coins = 40, 
+                           starts = 5,
+                           true_prob = c(0.3, 0.5, 0.7)){
+  # must have enough coins to generate initial empirical distribution
+  if (coins < (length(true_prob) * starts)){
+    stop("To generate a starting distribution, each machine must be",
+         " played ",
+         starts,
+         " times - not enough coins to do so.")
+  }
+  # allocate first ("warm up")
+  SS <- sapply(true_prob, FUN = function(x) sum(rbinom(starts, 1, x)))
+  FF <- starts - SS
+  # calculate metrics used for play allocation
+  probs <- SS / (SS + FF)
+  probs_normalized <- probs / sum(probs)
+  cumu_probs_normalized <- cumsum(probs_normalized)
+  # update number of coins
+  coins <- coins - (length(true_prob) * starts)
+  # create simulation data.frame
+  sim_df <- data.frame(machine = seq_along(true_prob),
+                       true_probabilities = true_prob,
+                       observed_probs = probs,
+                       successes = SS,
+                       failures = FF,
+                       plays = SS + FF,
+                       machine_played = NA,
+                       coins_left = coins)
+  # initialize before while loop
+  sim_list <- vector('list', length = coins)
+  i <- 1
+  # play until we run out of original coins
+  while(coins > 0){
+    # which machine to play?
+    update_index <- findInterval(runif(1), c(0, cumu_probs_normalized))
+    # play machine
+    flip <- rbinom(1, 1, true_prob[update_index])
+    # update successes and failure for machine that was played
+    SS[update_index] <- SS[update_index] + flip
+    FF[update_index] <- FF[update_index] + (1-flip)
+    # update metrics used for play allocation
+    probs <- SS / (SS + FF)
+    probs_normalized <- probs / sum(probs)
+    cumu_probs_normalized <- cumsum(probs_normalized)
+    # update number of coins
+    coins <- coins - 1    
+    # update simulation data.frame (very inefficient)
+    sim_list[[i]] <- data.frame(machine = seq_along(true_prob),
+                                true_probabilities = true_prob,
+                                observed_probs = probs,
+                                successes = SS,
+                                failures = FF,
+                                plays = SS + FF,
+                                machine_played = seq_along(true_prob) == update_index,
+                                coins_left = coins)
+    i <- i + 1
+  }
+  # show success:failure ratio
+  message("Success to failure ratio was ",
+          round(sum(SS) / sum(FF), 2),
+          "\n",
+          paste0("(", 
+                 paste0(SS, collapse = "+"), 
+                 ")/(", 
+                 paste0(FF, collapse = "+"), ")"))
+  # return data frame of values from experiment
+  rbind(sim_df, do.call('rbind', sim_list))
+}
+```
+
+# Data Analysis
+
+I'll show a brief example of what we can do with the data generated from this function.
+
+```{r echo = TRUE, cache = TRUE}
+set.seed(123)
+rw1 <- roulette_wheel(coins = 5000, 
+                      starts = 10, 
+                      true_prob = c(0.1, 0.25, 0.5, 0.65))
+
+knitr::kable(rw1[rw1$coins_left == 0,]) # show last play
+```
+
+
+# Conclusion
+
+This was a fun exercise for me, and it reminded me of a presentation I did in graduate school about this exact topic. I also wrote a [similar function](https://github.com/bgstieber/files_for_blog/blob/master/miscellaneous/roulette_wheel.py) in Python, and was moderately successful at that (it runs faster than my R function, but I'm less confident in how "pythonic" it is).
+
+My biggest concern with this implementation is the potential situation in which our warm start results in all failures for a given slot machine. If the machine fails across the warm start, it will not be selected for the rest of the simulation. To offset this, you could add a little "jitter" (technical term: epsilon) to the observed probabilities at each iteration, or you could add another random uniform variable that pulls a random lever, rather than the one determined by the simulation.
+
+
