@@ -5,7 +5,7 @@ date: ""
 output: html_document
 ---
 
-Delivering a great data science presentation can seem daunting. By no means am I a communications expert, but I have presented my fair share of talks to a diverse group of audiences. Through my experience, I've developed a few easy-to-remember tips to hopefully make your next data science presentation your best yet. 
+Delivering a great data science presentation can seem daunting. By no means am I a communications expert, but I have presented my fair share of talks to a diverse group of audiences. Through my experience, I've developed a few easy-to-remember tips to hopefully make your next data science presentation your best yet. These are tips that have worked for me, and I hope they're helpful!
 
 Without further ado, here are __seven tips for delivering a great data science presentation__.
 
@@ -25,11 +25,11 @@ That being said, delivering a presentation _can_ be an excellent way to familiar
 
 ### 3. Look yourself in the mirror and say "I'm not an impostor"
 
-[Impostor syndrome] is real and it sucks.
+[Impostor syndrome](https://www.uwhealth.org/health-wellness/tips-to-overcome-imposter-syndrome/52943) is real and it sucks.
 
 One of my favorite posters growing up was this one:
 
-<!-- ![expert_in_anything_was_once_a_beginner]() -->
+![](expert_in_anything_was_once_a_beginner.jpg)
 
 We're all at different levels of developing our skills. I've found that some of my biggest data science aha moments come from having conversations with people outside of the field. Sometimes, knowing too much _can_ be a bad thing, especially when it introduces rigidity or bias to a problem-solving strategy.
 
@@ -45,7 +45,7 @@ One of my favorite (and most critical) ways to evaluate my own presentation is t
 
 ### 5. Play your game, not anyone else's
 
-One of the most notable data presentations is [this one]() from Hans Rosling. He's engaging, dynamic, and entertaining. His presentation style seems effortless. He makes data fun!
+One of the most notable data presentations is [this one](https://www.youtube.com/watch?v=hVimVzgtD6w) from Hans Rosling. He's engaging, dynamic, and entertaining. His presentation style seems effortless. He makes data fun!
 
 Although I'd like to give presentations like Hans Rosling, I know I can't right now. The best I can do is to present in the style that best fits me. By no means does this mean I've resigned to delivering flat, boring, and dry talks. Instead, I stay realistic and try to do the best that I can do, not the best Hans Rosling could do.
 
@@ -73,7 +73,7 @@ Unrealistic <- c(
 Realistic <- c(
   "Deliver a strong talk, providing useful information to those in attendance",
   "Have a few punch lines that make at least one person laugh/chuckle/smirk",
-  "Make my twenty minute talk last about 20 minutes, without sacrificing material or interfering with others' presentations",
+  "Make my twenty minute talk last about twenty minutes, without sacrificing material or interfering with others' presentations",
   "Provide a new and accessible way of framing or thinking about a problem",
   "Deliver an engaging presentation, without seeming inauthentic"
 )
@@ -109,7 +109,7 @@ Just to recap, here are my tips for a great data science presentation:
 4. Put yourself in the shoes of an audience member
 5. Play your game, not anyone else's
 6. Set realistic expectations, strive to meet them, and hold yourself accountable
-7. TAke audience feedback and questions seriously, and use them to learn and improve
+7. Take audience feedback and questions seriously, and use them to learn and improve
 
 
 
