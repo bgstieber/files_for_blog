@@ -47,7 +47,7 @@ One of my favorite (and most critical) ways to evaluate my own presentation is t
 
 One of the most notable data presentations is [this one](https://www.youtube.com/watch?v=hVimVzgtD6w) from Hans Rosling. He's engaging, dynamic, and entertaining. His presentation style seems effortless. He makes data fun!
 
-Although I'd like to give presentations like Hans Rosling, I know I can't right now. The best I can do is to present in the style that best fits me. By no means does this mean I've resigned to delivering flat, boring, and dry talks. Instead, I stay realistic and try to do the best that I can do, not the best Hans Rosling could do.
+Although I'd like to give presentations like Hans Rosling, I know I can't right now. The best I can do is to present in the style that best fits me. This doesn't mean I've resigned to delivering flat, boring, and dry talks. Instead, I stay realistic and try to do the best that I can do, not the best Hans Rosling could do.
 
 Speaking of being realistic...
 
@@ -57,7 +57,7 @@ Another way to say this is to __set yourself up for success, not disappointment_
 
 Here's an example. 
 
-For my first presentation at a professional conference, the conference organizers provided ways to promote your session through social media and email. I thought this was really cool, but I had no interest taking part in these promotional activities. I had already committed to delivering my first talk at a professional conference, which took a lot of time to prepare for. I set a goal of delivering the best talk I could, and promoting my session was not part of my plan to achieve this goal. I stayed focus on my primary goal, and avoided getting distracted by anything else.
+For my first presentation at a professional conference, the conference organizers provided ways to promote your session through social media and email. I thought this was really cool, but I had no interest taking part in these promotional activities. I had already committed to delivering my first talk at a professional conference, which took a lot of time to prepare for. I set a goal of delivering the best talk I could, and promoting my session was not part of my plan to achieve this goal. I stayed focused on my primary goal, and avoided getting distracted by anything else.
 
 Here are a few different ways of turning unrealistic goals into realistic and attainable ones.
 
@@ -97,7 +97,7 @@ After you've finished your talk, do an analysis of your presentation.
 
 You can learn a lot just by paying attention to how your audience received you and your own perception of your performance.
 
-Just like some machine learning algorithms get better at minimizing a loss function through iteration after iteration, you can improve your presentation through actively learning and iterating on your presentation style.
+Just like how most machine learning algorithms get better at minimizing a loss function through iteration after iteration, you can improve your presentation through actively learning and iterating on your presentation style.
 
 # Wrapping up
 
@@ -110,8 +110,6 @@ Just to recap, here are my tips for a great data science presentation:
 5. Play your game, not anyone else's
 6. Set realistic expectations, strive to meet them, and hold yourself accountable
 7. Take audience feedback and questions seriously, and use them to learn and improve
-
-
 
 Do you have any tips for giving a great talk? If so, go ahead and leave them in the comments below!
 
