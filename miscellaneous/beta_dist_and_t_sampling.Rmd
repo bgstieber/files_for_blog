@@ -1,0 +1,29 @@
+---
+title: "The Beta Distribution and Thompson Sampling in R"
+author: "Brad Stieber"
+date: "11/3/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In a [recent post](https://bgstieber.github.io/post/roulette-wheels-for-multi-armed-bandits-a-simulation-in-r/) I talked about [multi-armed bandits](https://en.wikipedia.org/wiki/Multi-armed_bandit), and demonstrated one method (based on [an idea](https://jamesmccaffrey.wordpress.com/2019/10/28/roulette-wheel-selection-for-multi-armed-bandit-problems/) from James McCaffrey) for determining which choice to make in a sequential trial. In this post, I'm going to look at [Thompson sampling](https://en.wikipedia.org/wiki/Thompson_sampling) and how it employs the beta distribution to choose an action in a sequential trial.
+
+## Starters: The Beta Distribution
+
+
+
+## Thompson Sampling
+
+
+## Sampling in R
+
+
+  
+## Simulation Analysis
+
+
+
+## Wrapping Up
