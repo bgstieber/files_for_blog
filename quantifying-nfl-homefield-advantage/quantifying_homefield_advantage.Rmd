@@ -27,6 +27,7 @@ theme_set(theme_bw() +
                   plot.title = element_text(size = 16)))
 ```
 
+You can find my code for this analysis [on my GitHub](https://github.com/bgstieber/files_for_blog/tree/master/quantifying-nfl-homefield-advantage).
 
 ## Introduction
 
@@ -126,7 +127,7 @@ It's not just good enough to take the average or median of all home vs away scor
 
 We can use linear models to get closer to understanding home field advantage, by adjusting for the differences between the two teams. But before we get too deep into that, let's take a closer look at linear regression.
 
-## Linear Modeling Basics
+## Linear Regression Basics
 
 A lot of people are familiar with linear models, having performed "line of best fit" calculations sometime in high school. Most people cringe when they see the $y = mx + b$ formula, but statisticians and data scientists feel their hearts warm and get very excited after glancing at that formula. 
 
@@ -157,7 +158,7 @@ ggplot(mtcars, aes(wt, mpg))+
 mpg_by_wt <- lm(mpg ~ wt, data = mtcars)
 ```
 
-The linear model's formula is displayed in the upper right hand corner of the plot. The coefficient for $wt$ is `r round(coef(mpg_by_wt)[2], 1)`, this is the $m$ in the $y = mx + b$ equation. But what about $b$, the intercept of the line?
+The linear model's formula is displayed in the upper right hand corner of the plot. The coefficient for $wt$ is `r round(coef(mpg_by_wt)[2], 1)`, this is the $m$ in the $y = mx + b$ equation. The coefficient is negative, meaning that as the weight of the car increases, we expect its fuel efficiency to get worse. But what about $b$, the intercept of the line?
 
 The intercept of the best fit line is our "predicted" value of $y$ when $x$ equals 0. So, when the weight of a car is 0 pounds, we expect it to get `r round(coef(mpg_by_wt)[1], 2)` miles per gallon. This doesn't make any sense! A car that weighs 0 pounds doesn't get any miles per gallon, it doesn't even exist!
 
@@ -175,7 +176,7 @@ $$ \text{Home - Away Score} = \beta_{0} + \beta_{1} *\text{Elo Difference} + \be
 
 While $\beta_{1}$ and $\beta_{2}$ above are interesting, we're most interested in $\beta_{0}$, since this quantifies the home field advantage for evenly matched teams.
 
-Even talking, let's fit the model:
+Enough talking, let's fit the model:
 
 ```{r echo = TRUE}
 score_diff_model <- lm(home_away_score_diff ~ home_away_elo_diff+home_away_qb_elo_diff,
@@ -227,7 +228,7 @@ hfa_by_decade %>%
 
 ## Wrapping Up
 
-We can learn some pretty cool things about our data if we pay close attention to the output of our linear models. I think a lot of people forget to pay attention to the intercepts in their linear models. This makes sense most of the time, because the intercept doesn't really mean much (if we predict a person's height using their weight, the intercept is meaningless). 
+We can learn some pretty cool things about our data if we pay close attention to the output of our linear models. I think a lot of people forget to pay attention to the intercepts in their linear models. This makes sense most of the time, because the intercept doesn't really mean much in many of our models (e.g. if we predict a person's height using their weight, the intercept is meaningless). 
 
 However, in some cases the intercept is really important. In this example using NFL data, we were able to use the intercept to quantify home field advantage for evenly matched teams. Hopefully this post will give a data point to bring up at a nice dinner party where you and your acquaintances are discussing what home field advantage _really_ means.
 
