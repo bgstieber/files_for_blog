@@ -1,0 +1,236 @@
+---
+title: "Quantifying Home Field Advantage in the NFL Using Linear Models in R"
+author: "Brad Stieber"
+date: "1/17/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning = FALSE)
+```
+
+If you pay attention to NFL football, you're probably used to hearing that [homefield advantage](https://en.wikipedia.org/wiki/Home_advantage) is worth about 3 points. I've always been interested in this number, and how it was derived. So, using [some data from FiveThirtyEight](https://github.com/fivethirtyeight/data/tree/master/nfl-elo), along with some linear modeling in R, I attempted to quantify home field advantage. My analysis shows that home field advantage (how much we expect the home team to win by, if the teams are evenly matched) is about 2.59 points.
+
+Here are the packages we'll need:
+
+```{r echo = TRUE}
+library(tidyverse)
+library(data.table)
+library(ggridges)
+library(scales)
+```
+
+```{r}
+theme_set(theme_bw() +
+            theme(axis.text = element_text(size = 12),
+                  axis.title = element_text(size = 14),
+                  plot.title = element_text(size = 16)))
+```
+
+
+## Introduction
+
+FiveThirtyEight has a data set with game-by-game Elo ratings and forecasts dating back to 1920. Elo ratings are simple measures of strength based on game-by-game results. More details on Elo ratings can be found [here](https://fivethirtyeight.com/features/nfl-elo-ratings-are-back/).
+
+It's pretty easy to get this data.
+
+```{r echo = TRUE, cache = TRUE}
+data_link <- "https://projects.fivethirtyeight.com/nfl-api/nfl_elo.csv"
+
+nfl_data <- fread(data_link, verbose = FALSE)
+```
+
+Here are the first few rows and columns of the data:
+
+```{r}
+knitr::kable(head(nfl_data[,1:8]), align = "l")
+```
+
+
+```{r}
+nfl_data2 <- nfl_data %>%
+  as_tibble() %>%
+  filter(neutral == 0) %>%
+  mutate(home_away_elo_diff = elo1_pre - elo2_pre,
+         home_away_prob_diff = elo_prob1 - elo_prob2,
+         home_away_qb_elo_diff = qb1_value_pre - qb2_value_pre,
+         home_away_score_diff = score1 - score2)
+
+model_data <- nfl_data2 %>%
+  filter(playoff == "",
+         !is.na(home_away_elo_diff),
+         !is.na(home_away_qb_elo_diff),
+         !is.na(home_away_score_diff)) %>%
+  mutate(season_decade = 10 * floor(season / 10))
+```
+
+The full description of the data can be found on [FiveThirtyEight's GitHub](https://github.com/fivethirtyeight/data/tree/master/nfl-elo).
+
+We're interested in a few variables in this data:
+
+```{r}
+data_data <- structure(list(variable = c("elo1_pre", "elo2_pre", "qbelo1_pre", 
+"qbelo2_pre", "score1", "score2"), definition = c("Home team's Elo rating before the game", 
+"Away team's Elo rating before the game", "Home team's quarterback-adjusted base rating before the game", 
+"Away team's quarterback-adjusted base rating before the game", 
+"Home team's score", "Away team's score")), class = "data.frame", row.names = c(NA, 
+-6L))
+
+knitr::kable(data_data, align = "l")
+```
+
+To quantify home field advantage, we can look at the home vs away score differential for all games __not played at a neutral site__. We excluded playoff games from this analysis.
+
+Here's the summary of that score differential:
+
+```{r}
+ss <- summary(model_data$home_away_score_diff)
+knitr::kable(tibble(measure = names(ss), value = as.numeric(ss)),
+             align = "l")
+```
+
+The median margin of victory is `r median(model_data$home_away_score_diff)`. Since this number is positive, it implies that there _is_ a noticeable home field advantage.
+
+You might be wondering, has home field advantage been changing over time?
+
+```{r}
+model_data %>%
+  ggplot(aes(home_away_score_diff, factor(season_decade)))+
+  geom_density_ridges(aes(fill = season_decade), 
+                      rel_min_height = 0.015)+
+  scale_fill_viridis_c("Decade")+
+  scale_x_continuous("Home Score - Away Score",
+                     breaks = seq(-100, 100, 20))+
+  ylab("Decade")+
+  ggtitle("Distribution of Home vs Away Score Differential by Decade")
+```
+
+If you look at the most recent decades, you'll notice that the distribution has been becoming [bimodal](https://en.wikipedia.org/wiki/Multimodal_distribution), meaning there are two "peaks" in the distribution. The peaks belong to margins of victory of three points (a field goal) for the home and away teams:
+
+```{r}
+model_data %>%
+  count(season_decade, home_away_score_diff) %>%
+  group_by(season_decade) %>%
+  mutate(perc_of_games = n / sum(n)) %>%
+  top_n(2, perc_of_games) %>%
+  arrange(desc(season_decade), desc(n)) %>%
+  mutate(perc_of_games = percent(perc_of_games)) %>%
+  knitr::kable(col.names = c("Decade", "Home - Away",
+                             "Count of Games",
+                             "% of Games"),
+               caption = "Two most frequently occurring outcomes for each decade",
+               align = "l")
+```
+
+It's not just good enough to take the average or median of all home vs away score differentials. Each NFL game is different, and by just blindly taking a summary statistic, we are assuming that the teams playing in each game are evenly matched. In my opinion, this assumption is __invalid__.
+
+We can use linear models to get closer to understanding home field advantage, by adjusting for the differences between the two teams. But before we get too deep into that, let's take a closer look at linear regression.
+
+## Linear Modeling Basics
+
+A lot of people are familiar with linear models, having performed "line of best fit" calculations sometime in high school. Most people cringe when they see the $y = mx + b$ formula, but statisticians and data scientists feel their hearts warm and get very excited after glancing at that formula. 
+
+Linear models are incredibly powerful tools of statistical analysis. Most of the time, we spend a lot of energy interpreting the $m$ in the equation above. This gives us insight into how much we expect $y$ to change (__on average__) when $x$ changes by some amount.
+
+To illustrate, let's use the mtcars data set to predict a car's miles per gallon using its weight in pounds.
+
+```{r}
+lm_eqn <- function(df){
+    m <- lm(mpg ~ wt, df);
+    eq <- substitute(italic(mpg) == a + b %.% italic(wt)*","~~italic(r)^2~"="~r2, 
+         list(a = format(unname(coef(m)[1]), digits = 3),
+              b = format(unname(coef(m)[2]), digits = 3),
+             r2 = format(summary(m)$r.squared, digits = 3)))
+    as.character(as.expression(eq));
+}
+
+ggplot(mtcars, aes(wt, mpg))+
+  stat_smooth(method = 'lm')+
+  geom_point()+
+  scale_x_continuous("Weight (1000s of pounds)")+
+  geom_text(aes(4, 30, label = lm_eqn(mtcars)), 
+            parse = TRUE,
+            check_overlap = TRUE)+
+  ylab("MPG")+
+  ggtitle("Predicting Car's MPG with Weight, Using mtcars Data")
+
+mpg_by_wt <- lm(mpg ~ wt, data = mtcars)
+```
+
+The linear model's formula is displayed in the upper right hand corner of the plot. The coefficient for $wt$ is `r round(coef(mpg_by_wt)[2], 1)`, this is the $m$ in the $y = mx + b$ equation. But what about $b$, the intercept of the line?
+
+The intercept of the best fit line is our "predicted" value of $y$ when $x$ equals 0. So, when the weight of a car is 0 pounds, we expect it to get `r round(coef(mpg_by_wt)[1], 2)` miles per gallon. This doesn't make any sense! A car that weighs 0 pounds doesn't get any miles per gallon, it doesn't even exist!
+
+In a lot of linear models, the intercept isn't really worth interpreting. However, we can use the intercept to understand home field advantage using our NFL data. 
+
+## Interpreting the Intercept in a Model of the NFL
+
+We first fit a model trying to predict the home vs away score differential using the home vs away pre game Elo differential and the home vs away pre game QB Elo differential. 
+
+When the Elo differentials are equal to zero, it means the teams are effectively even matched (our best guess for the power rankings of the respective teams are basically equal). This gets us closer to understanding true home field advantage than taking a summary statistic would. 
+
+Our model will look like:
+
+$$ \text{Home - Away Score} = \beta_{0} + \beta_{1} *\text{Elo Difference} + \beta_{2} * \text{QB Elo Difference}$$
+
+While $\beta_{1}$ and $\beta_{2}$ above are interesting, we're most interested in $\beta_{0}$, since this quantifies the home field advantage for evenly matched teams.
+
+Even talking, let's fit the model:
+
+```{r echo = TRUE}
+score_diff_model <- lm(home_away_score_diff ~ home_away_elo_diff+home_away_qb_elo_diff,
+                       data = model_data)
+```
+
+```{r}
+library(knitr)
+
+dd <- broom::tidy(score_diff_model) %>%
+  mutate(estimate = round(estimate, 3),
+         std.error = round(std.error, 3),
+         statistic = round(statistic, 3),
+         p.value = round(p.value, 3)) %>%
+  select(term, estimate)
+
+kable(dd)
+```
+
+Touchdown!
+
+If we look at the intercept, the value is about `r round(coef(score_diff_model)[1], 2)`. This means that if the two teams are basically evenly matched (i.e. $x=0$ in $y = mx+b$), we can expect the home team to win by about `r round(coef(score_diff_model)[1], 2)` points (__on average__).
+
+Taking it one step further, here are the home field advantages for each decade.
+
+```{r}
+hfa_by_decade <- unique(model_data$season_decade) %>%
+  map_df(~broom::tidy(lm(home_away_score_diff ~ 
+                           home_away_elo_diff + home_away_qb_elo_diff,
+                         data = model_data[model_data$season_decade == .x,])) %>%
+                        bind_cols(tibble(decade = rep(.x, 3)))) %>%
+  filter(term == "(Intercept)")
+
+hfa_by_decade %>%
+    ggplot(aes(factor(decade), estimate))+
+    geom_hline(aes(yintercept = coef(score_diff_model)[1]),
+               linetype = 'dashed')+
+    geom_pointrange(aes(ymin = estimate - 2 * std.error, 
+                        ymax = estimate + 2 * std.error),
+                    size = 1.2, colour = "#c5050c")+
+    xlab("Decade")+
+    scale_y_continuous("Adjusted Home Field Advantage", 
+                       limits = c(0,5))+
+  ggtitle("Adjusted Home Field Advantage by Decade",
+          subtitle = "Error bars are approximate 95% confidence intervals")
+
+```
+
+
+## Wrapping Up
+
+We can learn some pretty cool things about our data if we pay close attention to the output of our linear models. I think a lot of people forget to pay attention to the intercepts in their linear models. This makes sense most of the time, because the intercept doesn't really mean much (if we predict a person's height using their weight, the intercept is meaningless). 
+
+However, in some cases the intercept is really important. In this example using NFL data, we were able to use the intercept to quantify home field advantage for evenly matched teams. Hopefully this post will give a data point to bring up at a nice dinner party where you and your acquaintances are discussing what home field advantage _really_ means.
+
+
+
+
