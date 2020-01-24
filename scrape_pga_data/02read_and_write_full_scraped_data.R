@@ -40,5 +40,10 @@ pga2 <- all_pga_data %>%
 pga1$pct_total_money_won <- pga2
 
 
-map2(names(pga1), pga1, 
-     ~write_csv(.y, paste0("data//", .x, "_FULL.csv")))
+# map2(names(pga1), pga1, 
+#      ~write_csv(.y, paste0("data//", .x, "_FULL.csv")))
+
+for(i in 1:length(pga1)){
+  write_csv(pga1[[i]], 
+            paste0("data//", names(pga1)[[i]] , "_FULL.csv"))
+}

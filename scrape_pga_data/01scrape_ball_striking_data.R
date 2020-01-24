@@ -37,6 +37,13 @@ full_pga_data <- function(urls, years){
     as_tibble()
 }
 
+full_pga_data_trycatch <- function(urls, years){
+  
+  tryCatch(full_pga_data(urls, years),
+           error = function(e) "error")
+  
+}
+
 
 ball_striking_urls <- data_frame(years = 2004:2019) %>%
   mutate(total_driving = glue("https://www.pgatour.com/stats/stat.129.{years}.html"),
@@ -50,15 +57,14 @@ ball_striking_urls <- data_frame(years = 2004:2019) %>%
          pct_total_money_won = glue("https://www.pgatour.com/stats/stat.02447.{years}.html"))
 
 
-get_full_data <- FALSE
+get_full_data <- TRUE
 
 if(get_full_data){
   
   all_ball_striking_data <- ball_striking_urls %>%
     gather(measure, url, -years) %>%
     rowwise() %>%
-    mutate(data = I(list(full_pga_data(url, years) %>% 
-                           mutate(measure = measure))))
+    mutate(data = I(list(full_pga_data_trycatch(url, years))))
   
   data_list <- all_ball_striking_data$data
   
@@ -68,11 +74,13 @@ if(get_full_data){
   
 }
 
-write_full_data <- FALSE
+write_full_data <- TRUE
 
 if(write_full_data & get_full_data){
   
   for(i in 1:length(data_list)){
+    
+    data_list[[i]]$measure <- all_ball_striking_data[i,]$measure
     
     write_csv(x = data_list[[i]],
               path = file.path("data",
