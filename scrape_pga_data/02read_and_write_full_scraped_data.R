@@ -8,7 +8,9 @@ fix_money <- function(data){
               as.character)
 }
 
-file_names <- dir("data//")
+file_names <- dir("data//") 
+
+file_names <- file_names[!grepl("FULL.csv", file_names)]
 
 file_groups <- file_names %>%
   gsub(pattern = "_[0-9]{4}.[a-z]{3}",
