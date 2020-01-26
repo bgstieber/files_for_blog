@@ -46,15 +46,15 @@ full_pga_data_trycatch <- function(urls, years){
 
 
 ball_striking_urls <- data_frame(years = 2004:2019) %>%
-  mutate(total_driving = glue("https://www.pgatour.com/stats/stat.129.{years}.html"),
-         sg_tee_to_green = glue("https://www.pgatour.com/stats/stat.02674.{years}.html"),
-         sg_off_tee = glue("https://www.pgatour.com/stats/stat.02567.{years}.html"),
-         sg_app_green = glue("https://www.pgatour.com/stats/stat.02568.{years}.html"),
-         sg_around_green = glue("https://www.pgatour.com/stats/stat.02569.{years}.html"),
-         sg_putting = glue("https://www.pgatour.com/stats/stat.02564.{years}.html"),
-         gir_pct = glue("https://www.pgatour.com/stats/stat.103.{years}.html"),
-         avg_driv_dist = glue("https://www.pgatour.com/stats/stat.101.{years}.html"),
-         pct_total_money_won = glue("https://www.pgatour.com/stats/stat.02447.{years}.html"))
+  mutate(total_driving = glue("https://www.pgatour.com/stats/stat.129.y{years}.html"),
+         sg_tee_to_green = glue("https://www.pgatour.com/stats/stat.02674.y{years}.html"),
+         sg_off_tee = glue("https://www.pgatour.com/stats/stat.02567.y{years}.html"),
+         sg_app_green = glue("https://www.pgatour.com/stats/stat.02568.y{years}.html"),
+         sg_around_green = glue("https://www.pgatour.com/stats/stat.02569.y{years}.html"),
+         sg_putting = glue("https://www.pgatour.com/stats/stat.02564.y{years}.html"),
+         gir_pct = glue("https://www.pgatour.com/stats/stat.103.y{years}.html"),
+         avg_driv_dist = glue("https://www.pgatour.com/stats/stat.101.y{years}.html"),
+         pct_total_money_won = glue("https://www.pgatour.com/stats/stat.02447.y{years}.html"))
 
 
 get_full_data <- TRUE

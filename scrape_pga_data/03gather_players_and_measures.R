@@ -18,7 +18,7 @@ measure_and_column <- c("avg_driv_dist",
                         "total_driving")
 
 money <- full_data$pct_total_money_won_FULL.csv %>%
-  mutate(money_won = parse_number(`OFFICIAL MONEY WON`))
+  mutate(money_won = `OFFICIAL MONEY WON`)
 
 money_scaled <-money %>%
   select(year, `PLAYER NAME`, money_won, EVENTS) %>%
