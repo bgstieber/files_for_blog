@@ -44,10 +44,14 @@ p1 <- putting_from.summary_long %>%
                                     "Median",
                                     "25th Percentile",
                                     "Worst"))+
-  xlab("Stat")+
+  scale_x_discrete('"Putting From" stat',
+                   labels = function(x) gsub("Putting from ",
+                                             "",
+                                             x))+
   scale_y_continuous("% of Putts Made", labels = percent)+
   ggtitle("Summary Measures of Putting Performance",
-          subtitle = "Data based on statistics from 2009 to 2019")
+          subtitle = "Data based on statistics from 2009 to 2019")+
+  theme(legend.justification = 'top')
 
 # difference between 75th and 25th percentile (how hard to go from bottom 25 to top 25?)
 p2 <- putting_from.summary %>%
@@ -125,4 +129,17 @@ putting_from %>%
   select(player, year, name, pct_made, pct_made_scaled) %>%
   arrange(pct_made_scaled)
 
+
+
+putting_from_by_year_Wide <- putting_from %>%
+  select(player, year, name, pct_made) %>%
+  mutate(name = gsub("'", "", gsub(" ", "_", tolower(name)))) %>%
+  group_by(player, year) %>%
+  spread(name, pct_made)
+
+putting_from_by_year_wide.attempts <- putting_from %>%
+  select(player, year, name, attempts) %>%
+  mutate(name = gsub("'", "", gsub(" ", "_", tolower(name)))) %>%
+  group_by(player, year) %>%
+  spread(name, attempts)
 
