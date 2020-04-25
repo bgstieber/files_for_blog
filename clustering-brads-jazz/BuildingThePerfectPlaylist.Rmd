@@ -9,4 +9,59 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning = FALSE)
 ```
 
-I've been known to spend countless hours trying to build the perfect playlist in Spotify. 
+Have you ever found yourself spending _way_ too much time creating the "perfect" playlist in Spotify? I have a jazz playlist with over 200 songs that I've been carefully curating since 2015. Even though I've created a solid playlist of classic and contemporary jazz songs, I'm left yearning for more. So, I decided to approach this problem wearing my data scientist hat rather than my music fan hat.
+
+Here's what I'll go through in this post:
+
+- Getting data from Spotify using the [__`spotifyr`__](https://www.rcharlie.com/spotifyr/) R package
+- Exploring and preparing data for clustering
+- Clustering and using the results
+
+
+## Getting the data
+
+To start, we need to grab the data using Spotify's API. There's a fantastic R package called [__`spotifyr`__](https://www.rcharlie.com/spotifyr/) which allows us to access a lot of data about our activity on Spotify. If you're interested, I'd suggest checking out the website for the package.
+
+To get the data, you need to go through an [authentication](https://www.rcharlie.com/spotifyr/index.html#authentication) process. It looks like this:
+
+```{r eval = FALSE, echo = TRUE}
+library(spotifyr)
+
+Sys.setenv(SPOTIFY_CLIENT_ID = 'xxxxxxxxxxxxxxxxxxxxx')
+Sys.setenv(SPOTIFY_CLIENT_SECRET = 'xxxxxxxxxxxxxxxxxxxxx')
+
+access_token <- get_spotify_access_token()
+```
+
+To get the data for my playlist, I needed to run the following code. I first grab a list of my Spotify playlists using `get_my_playlists`, and then use the `get_playlist_tracks` and `get_track_audio_features` functions to access information about the tracks in my playlist. You'll notice I excluded three tracks from the final data set. I "cheated" a bit and realized these three songs looked like outliers in the data, so it was necessary to remove them.
+
+```{r eval = FALSE, echo=TRUE}
+p <- get_my_playlists(limit = 30)
+
+brads_jazz <- p %>% 
+  filter(name == "Brad's Jazz")
+
+rm_tracks <- c("62JYNwb0IkMsbVCIDzQcaJ",
+               "60EkFnRSHQ8nnofL3Wns5X", 
+               "0A21IjvzVtcY5iCLW2wGkt")
+
+brads_jazz.tracks <- get_playlist_tracks(brads_jazz$id) %>%
+  unique() %>%
+  filter(!track.id %in% rm_tracks)
+
+brads_jazz.tracks_af <- get_track_audio_features(brads_jazz.tracks$track.id)
+```
+
+When you run this code, you may run into issues with Spotify's API not allowing you to access all of the tracks at once. So, you may need to chunk out your data read process so that you don't exceed their rate limits.
+
+## Exploring and preparing the data 
+
+```{r}
+library(tidyverse)
+```
+
+
+## Clustering and using the results
+
+
+## Wrapping up
