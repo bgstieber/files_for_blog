@@ -1,0 +1,12 @@
+---
+title: 'Building the Perfect Spotify Playlist: Clustering in R'
+author: "Brad Stieber"
+date: "4/25/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning = FALSE)
+```
+
+I've been known to spend countless hours trying to build the perfect playlist in Spotify. 
