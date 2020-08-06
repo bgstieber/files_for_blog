@@ -19,6 +19,13 @@ The coronavirus pandemic is still not under control [across the United States](h
 
 ## The Data
 
+In a separate script, I've collected the data we'll need for this analysis.
+
+```{r echo = FALSE}
+model_data <- 
+```
+
+
 ## Let's Make a Map
 
 ## Let's Make Another Map

@@ -140,6 +140,12 @@ model_data <- model_data.base %>%
          state_abbr) %>%
   na.omit()
 
+write_data <- TRUE
+
+if (write_data){
+  write_csv(model_data, "covid19_model_data.csv")
+}
+
 # straightforward linear model to predict percentage
 fitmod <- lm(freq_always ~ 
                I(log1p(deaths_per_100K))+
