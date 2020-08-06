@@ -1,5 +1,5 @@
 ---
-title: 'Building the Perfect Spotify Playlist: Clustering in R'
+title: 'Building a Great Spotify Playlist Using Data: Clustering in R'
 author: "Brad Stieber"
 date: "4/25/2020"
 output: html_document
@@ -60,8 +60,13 @@ When you run this code, you may run into issues with Spotify's API not allowing 
 library(tidyverse)
 ```
 
+```{r echo = FALSE}
+
+```
+
 
 ## Clustering and using the results
+
 
 
 ## Wrapping up

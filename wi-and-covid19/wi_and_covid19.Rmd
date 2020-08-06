@@ -1,0 +1,91 @@
+---
+title: 'COVID-19: What''s Going in Wisconsin?'
+author: "Brad Stieber"
+date: "7/4/2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(scales)
+library(zoo)   
+
+
+roll_mean_7 <- function(x){
+  rollmean(x, k = 7, align = "right", na.pad = TRUE)
+}
+
+roll_sum_7 <- function(x){
+  rollsum(x, k = 7, align = "right", na.pad = TRUE)
+}
+```
+
+```{r cache = TRUE}
+full_data_link <- "https://opendata.arcgis.com/datasets/b913e9591eae4912b33dc5b4e88646c5_10.csv"
+
+full_data.base <- read_csv(full_data_link, guess_max = 25000) %>%
+  mutate(DATE = as.Date(DATE, "%Y/%m/%d"))
+
+full_data <- full_data.base %>%
+  mutate(pos_test_rate = POS_NEW/TEST_NEW) %>%
+  arrange(DATE) %>%
+  group_by(GEO, NAME) %>%
+  mutate_at(c("pos_test_rate", "POS_NEW", "TEST_NEW", "DTH_NEW", "NEG_NEW"),
+            list(roll_mean_7 = roll_mean_7)) %>%
+  mutate_at(c( "POS_NEW", "TEST_NEW", "DTH_NEW", "NEG_NEW"),
+            list(roll_sum_7 = roll_sum_7)) %>%
+  mutate_at(vars(starts_with("POS_")),
+            list(roll_sum_7 = roll_sum_7)) %>%
+  ungroup()
+```
+
+```{r}
+state_data <- full_data %>%
+  filter(GEO == "State") %>%
+  mutate(pos_test_rate_moving = POS_NEW_roll_sum_7/TEST_NEW_roll_sum_7)
+  
+
+state_data.filt <- state_data %>%
+    filter(DATE > "2020-03-31")
+```
+
+
+Wisconsin, like [many states in the US](https://www.cbsnews.com/video/coronavirus-cases-surge-in-40-states-as-us-braces-for-holiday-weekend/), is [currently experiencing a surge](https://madison.com/wsj/news/local/health-med-fit/surge-of-wisconsin-covid-19-cases-in-young-adults-concerns-officials/article_2afc84c8-bcce-59be-aadb-08ba68e95767.html) in coronavirus cases. As a resident of Wisconsin, I have been proud of our state's response (especially with testing and data reporting), but even with such a decent handle on things, we're still experiencing a surge in cases. Throughout the pandemic, I've been tracking the data and doing little ad hoc analyses on my own. In this blog post, I'll formalize some data analysis and look deeper into a few trends.
+
+Before I begin, let me start with a __big fat disclaimer__: I'm not a doctor or an epidemiolgist. At best, I'm a data scientst with a little background in biostatistics. This is purely an exploratory data analysis...and it's not even guaranteed to be entirely accurate (I'm only using the most easily available public data, which is subject to change!). That being said, wear a mask when you're in public and wash your hands.
+
+
+## Analysis
+
+### Surge in cases or more testing?
+
+```{r}
+state_data.filt %>%
+    ggplot(aes(DATE, POS_NEW))+
+    geom_point(alpha = 0.5)+
+    geom_line(aes(y=POS_NEW_roll_mean_7))
+```
+
+
+```{r}
+state_data.filt %>%
+    ggplot(aes(DATE, POS_NEW/TEST_NEW))+
+    geom_point(alpha = 0.5)+
+    geom_line(aes(y = pos_test_rate_moving))
+```
+
+
+
+### County hotspots
+
+
+### Young people
+
+## Wrapping up
+
+
+
+
+
+
+

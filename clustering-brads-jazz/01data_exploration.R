@@ -12,7 +12,8 @@ playlist_features %>%
   gather(variable, value) %>%
   ggplot(aes(value, fill = variable))+
   geom_histogram()+
-  facet_wrap(~variable,scales = 'free')
+  facet_wrap(~variable,scales = 'free')+
+  theme(legend.position = "none")
 
 
 vars_to_keep <- c("acousticness", "danceability", 
