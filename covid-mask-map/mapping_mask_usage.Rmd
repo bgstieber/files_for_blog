@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r}
+```{r message = FALSE, warning = FALSE}
 library(tidyverse)
 ```
 
@@ -19,11 +19,31 @@ The coronavirus pandemic is still not under control [across the United States](h
 
 ## The Data
 
-In a separate script, I've collected the data we'll need for this analysis.
+In a separate [script](https://github.com/bgstieber/files_for_blog/blob/master/covid-mask-map/getdata.R), I've collected [the data](https://github.com/bgstieber/files_for_blog/raw/master/covid-mask-map/covid19_model_data.csv) we'll need for this analysis. The data comes from a variety of sources: the [NYtimes survey](https://github.com/nytimes/covid-19-data/raw/master/mask-use/mask-use-by-county.csv), [covid data](https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/), [2016 election results](https://github.com/tonmcg/US_County_Level_Election_Results_08-16/raw/master/2016_US_County_Level_Presidential_Results.csv), and [the census](https://walker-data.com/tidycensus/index.html).
 
-```{r echo = FALSE}
-model_data <- 
+```{r echo = FALSE, message=FALSE, cache=TRUE}
+l1 <- "https://github.com/bgstieber/files_for_blog/raw/master/"
+l2 <- "covid-mask-map/covid19_model_data.csv"
+model_data <- read_csv(paste0(l1, l2))
 ```
+
+```{r}
+head(model_data)
+```
+
+Here are the columns in that data:
+
+- __COUNTYFP__, __fips_numeric__, __county_name__: county-level data
+- __freq_always__: % "frequently or always wear a mask in public when you expect to be within six feet of another person
+- __deaths_per_100K__: as of July 1st, # of covid-19 deaths per 100K people in the county
+- __deaths_per_cases__: as of July 1st, # of covid-19 deaths per covid-19 cases in the county
+- __trump_ratio_clinton__: the ratio of Trump's percentage vote to Clinton's ($\%Trump/\%Cllinton$)
+- __inc__: per capita income in the county
+- __edu_pct__: % of county with a bachelor's or higher
+- __population_density__: population density of the county
+- __females_65_plus_pct__: % of the female population aged 65 or older in the county
+- __state_abbr__: state code 
+
 
 
 ## Let's Make a Map

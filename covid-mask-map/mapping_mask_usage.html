@@ -370,17 +370,36 @@ summary {
 
 
 <pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## -- Attaching packages --------------------------------------- tidyverse 1.3.0 --</code></pre>
-<pre><code>## v ggplot2 3.3.2     v purrr   0.3.4
-## v tibble  3.0.3     v dplyr   1.0.0
-## v tidyr   1.1.0     v stringr 1.4.0
-## v readr   1.3.1     v forcats 0.5.0</code></pre>
-<pre><code>## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
-## x dplyr::filter() masks stats::filter()
-## x dplyr::lag()    masks stats::lag()</code></pre>
 <p>The coronavirus pandemic is still not under control <a href="https://www.nytimes.com/interactive/2020/us/coronavirus-us-cases.html">across the United States</a>. One of the <a href="http://files.fast.ai/papers/masks_lit_review.pdf">easiest ways</a> to <a href="https://www.washingtonpost.com/business/2020/06/17/masks-salons-missouri/">protect you and those around you</a> is by <a href="http://ftp.iza.org/dp13319.pdf">wearing a mask</a> when <a href="https://www.healthaffairs.org/doi/10.1377/hlthaff.2020.00818">you leave the house</a>. The New York Times performed a <a href="https://www.nytimes.com/interactive/2020/07/17/upshot/coronavirus-face-mask-map.html">survey</a> to investigate mask usage across the US. In this post, I’m going to explore that data a bit, and then end with a cautionary tale of calculating percentages with a small sample.</p>
 <div id="the-data" class="section level2">
 <h2>The Data</h2>
+<p>In a separate <a href="https://github.com/bgstieber/files_for_blog/blob/master/covid-mask-map/getdata.R">script</a>, I’ve collected <a href="https://github.com/bgstieber/files_for_blog/raw/master/covid-mask-map/covid19_model_data.csv">the data</a> we’ll need for this analysis. The data comes from a variety of sources: the <a href="https://github.com/nytimes/covid-19-data/raw/master/mask-use/mask-use-by-county.csv">NYtimes survey</a>, <a href="https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/">covid data</a>, <a href="https://github.com/tonmcg/US_County_Level_Election_Results_08-16/raw/master/2016_US_County_Level_Presidential_Results.csv">2016 election results</a>, and <a href="https://walker-data.com/tidycensus/index.html">the census</a>.</p>
+<pre class="r"><code>head(model_data)</code></pre>
+<pre><code>## # A tibble: 6 x 12
+##   COUNTYFP fips_numeric county_name freq_always deaths_per_100K deaths_per_cases
+##   &lt;chr&gt;           &lt;dbl&gt; &lt;chr&gt;             &lt;dbl&gt;           &lt;dbl&gt;            &lt;dbl&gt;
+## 1 01001            1001 Autauga Co~       0.739           21.5           0.0217 
+## 2 01003            1003 Baldwin Co~       0.759            4.48          0.0142 
+## 3 01005            1005 Barbour Co~       0.692            4.05          0.00306
+## 4 01007            1007 Bibb County       0.85             4.47          0.00571
+## 5 01009            1009 Blount Cou~       0.653            1.73          0.00457
+## 6 01011            1011 Bullock Co~       0.786           99.0           0.0272 
+## # ... with 6 more variables: trump_ratio_clinton &lt;dbl&gt;, inc &lt;dbl&gt;,
+## #   edu_pct &lt;dbl&gt;, population_density &lt;dbl&gt;, females_65_plus_pct &lt;dbl&gt;,
+## #   state_abbr &lt;chr&gt;</code></pre>
+<p>Here are the columns in that data:</p>
+<ul>
+<li><strong>COUNTYFP</strong>, <strong>fips_numeric</strong>, <strong>county_name</strong>: county-level data</li>
+<li><strong>freq_always</strong>: % &quot;frequently or always wear a mask in public when you expect to be within six feet of another person</li>
+<li><strong>deaths_per_100K</strong>: as of July 1st, # of covid-19 deaths per 100K people in the county</li>
+<li><strong>deaths_per_cases</strong>: as of July 1st, # of covid-19 deaths per covid-19 cases in the county</li>
+<li><strong>trump_ratio_clinton</strong>: the ratio of Trump’s percentage vote to Clinton’s (<span class="math inline">\(\%Trump/\%Cllinton\)</span>)</li>
+<li><strong>inc</strong>: per capita income in the county</li>
+<li><strong>edu_pct</strong>: % of county with a bachelor’s or higher</li>
+<li><strong>population_density</strong>: population density of the county</li>
+<li><strong>females_65_plus_pct</strong>: % of the female population aged 65 or older in the county</li>
+<li><strong>state_abbr</strong>: state code</li>
+</ul>
 </div>
 <div id="lets-make-a-map" class="section level2">
 <h2>Let’s Make a Map</h2>
