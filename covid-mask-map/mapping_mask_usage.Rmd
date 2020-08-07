@@ -9,13 +9,24 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r message = FALSE, warning = FALSE}
+```{r message = FALSE, warning = FALSE, echo = FALSE}
+# load packages
 library(tidyverse)
+library(broom)
+library(maps)
+library(ggmap)
+library(scales)
+theme_set(theme_bw())
 ```
 
 
 The coronavirus pandemic is still not under control [across the United States](https://www.nytimes.com/interactive/2020/us/coronavirus-us-cases.html). One of the [easiest ways](http://files.fast.ai/papers/masks_lit_review.pdf) to [protect you and those around you](https://www.washingtonpost.com/business/2020/06/17/masks-salons-missouri/) is by [wearing a mask](http://ftp.iza.org/dp13319.pdf) when [you leave the house](https://www.healthaffairs.org/doi/10.1377/hlthaff.2020.00818). The New York Times performed a [survey](https://www.nytimes.com/interactive/2020/07/17/upshot/coronavirus-face-mask-map.html) to investigate mask usage across the US. In this post, I'm going to explore that data a bit, and then end with a cautionary tale of calculating percentages with a small sample.
 
+I originally found a [data visualization on Reddit](https://www.reddit.com/r/dataisbeautiful/comments/i047e9/oc_countylevel_map_of_maskusage_in_the_united/) which used the data to create the following map:
+
+![](https://i.redd.it/rbftphm1vtd51.png)
+
+So I decided to try and extend the analysis, similar to another [blog post](https://bgstieber.github.io/post/iterating-on-a-2016-election-analysis/) I wrote about the 2016 election.
 
 ## The Data
 
@@ -24,11 +35,57 @@ In a separate [script](https://github.com/bgstieber/files_for_blog/blob/master/c
 ```{r echo = FALSE, message=FALSE, cache=TRUE}
 l1 <- "https://github.com/bgstieber/files_for_blog/raw/master/"
 l2 <- "covid-mask-map/covid19_model_data.csv"
-model_data <- read_csv(paste0(l1, l2))
+covid_data <- read_csv(paste0(l1, l2))
 ```
 
+```{r cache = TRUE, echo = FALSE}
+
+# straightforward linear model to predict percentage
+fitmod <- lm(freq_always ~ 
+               I(log1p(deaths_per_100K))+
+               I(log(inc))+
+               I(log(trump_ratio_clinton))+
+               edu_pct+
+               I(log1p(females_65_plus_pct))+
+               state_abbr +
+               I(log(population_density)),
+             data = covid_data)
+
+
+special_fips <- c(12091L, 22099L, 37053L, 48167L, 51001L, 
+                  53053L, 53055L)
+
+county_map_with_fips <- county.fips %>% 
+  separate(polyname, c('region', 'subregion'), ',') %>%
+  mutate(subregion = ifelse(fips %in% special_fips,
+                            stringi::stri_split_fixed(subregion,
+                                                      ":",
+                                                      n=1,
+                                                      tokens_only = TRUE) %>%
+                              unlist,
+                            subregion)) %>%
+  unique() %>%
+  inner_join(map_data('county')) 
+
+# add residuals and fitted
+## if residual is positive: 
+## actual > predicted (underestimated mask compliance)
+## if residual is negative:
+## actual < predict (overestimated mask compliance)
+model_data.augment <- augment(fitmod, covid_data)
+
+# data for map making
+map_plot_data <-  model_data.augment %>%
+  select(COUNTYFP, fips_numeric, freq_always, 
+         fitted = .fitted, 
+         resid = .resid, 
+         stndrd_resid = .std.resid) %>%
+  inner_join(county_map_with_fips, by = c("fips_numeric" = "fips"))
+```
+
+
 ```{r}
-head(model_data)
+head(covid_data)
 ```
 
 Here are the columns in that data:
@@ -40,13 +97,25 @@ Here are the columns in that data:
 - __trump_ratio_clinton__: the ratio of Trump's percentage vote to Clinton's ($\%Trump/\%Cllinton$)
 - __inc__: per capita income in the county
 - __edu_pct__: % of county with a bachelor's or higher
-- __population_density__: population density of the county
+- __population_density__: population density of the county (people per square mile)
 - __females_65_plus_pct__: % of the female population aged 65 or older in the county
 - __state_abbr__: state code 
 
-
+Obviously, to recreate the map above, all we need to know is the county and % of people wearing a mask frequently or always. I brought in a few extra columns which will be used later on in the analysis.
 
 ## Let's Make a Map
+
+In the map above, the creator used a [diverging color palette](http://www.personal.psu.edu/cab38/ColorSch/SchHTMLs/CBColorDiv.html). Typically, a diverging palette will be used when there is a "central point" in the data set. For example, if you were comparing how a stock price has changed from the previous year, the central point of the data would be 0. 
+
+As it is, the survey data does not have a central point, which makes the use of a diverging palette questionable. We could perform some data manipulation on the survey data to see how a county's usage compares to the average. If we did that, then a sequential palette would make more sense, since a value of 0 (a central point) would indicate that the county is average, values less than 0 would indicate below average mask usage, and values greater than 0 would indicate above average mask usage. 
+
+To improve on the map from above, we can instead use a [sequential color palette](http://www.personal.psu.edu/cab38/ColorSch/SchHTMLs/CBColorSeq.html). A sequential color palette does not require the data to have a midpoint, instead it just reflects a data series that goes from low to high.
+
+```{r}
+
+```
+
+
 
 ## Let's Make Another Map
 
