@@ -111,8 +111,23 @@ As it is, the survey data does not have a central point, which makes the use of 
 
 To improve on the map from above, we can instead use a [sequential color palette](http://www.personal.psu.edu/cab38/ColorSch/SchHTMLs/CBColorSeq.html). A sequential color palette does not require the data to have a midpoint, instead it just reflects a data series that goes from low to high.
 
-```{r}
-
+```{r echo = FALSE, cache=TRUE}
+map_plot_data %>%
+  ggplot(aes(long, lat, group = group, fill = freq_always))+
+  geom_polygon(colour = rgb(0.9,0.9,0.9, .1))+
+  geom_polygon(data = map_data('state'), fill = NA, colour = 'white')+
+  scale_fill_distiller(palette = "RdPu",
+                       name = '% wearing mask frequently/always\nin public',
+                       direction = 1,
+                       labels = percent)+
+  theme_minimal()+
+  theme(axis.text = element_blank(),
+        panel.grid = element_blank(),
+        legend.position = 'top')+
+  coord_map()+
+  xlab('')+ylab('')+
+  labs(title = "Mask Usage in the United States",
+       caption = "Data from Dynata and the New York Times")
 ```
 
 
