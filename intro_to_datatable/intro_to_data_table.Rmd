@@ -1,0 +1,328 @@
+---
+title: "An Introduction to the `data.table` package"
+author: "Brad Stieber"
+date: ""
+output: 
+  html_document: 
+    highlight: tango
+---
+
+Although the primary data wrangling package I use is [__`tidyverse`__](https://www.tidyverse.org/), it's worthwhile to explore other packages that do similar data manipulations. The closest "competitor" to the [__`tidyverse`__](https://www.tidyverse.org/) is the [__`data.table`__](https://rdatatable.gitlab.io/data.table/) package. 
+
+![Data Wrangling](https://media.giphy.com/media/wRKeX8o1eIxxu/giphy.gif)
+
+Three of the main selling points for using [__`data.table`__](https://rdatatable.gitlab.io/data.table/) are that it's 
+
+- Fast
+    + [`fread`](https://rdatatable.gitlab.io/data.table/reference/fread.html) and [`fwrite`](https://rdatatable.gitlab.io/data.table/reference/fwrite.html) should be a part of any data scientist's data file management toolbox 
+- Concise
+    + We'll go through a few examples using the [__`data.table`__](https://rdatatable.gitlab.io/data.table/) syntax
+- Efficient
+    + Works well with large data
+
+These are three qualities we look for in data manipulation.
+
+If you're frustrated by how verbose data manipulation chains can get using [__`tidyverse`__](https://www.tidyverse.org/) packages, [__`data.table`__](https://rdatatable.gitlab.io/data.table/) might be right for you.
+
+Here are the packages we'll need for this post.
+
+```{r message=FALSE, warning=FALSE, error=FALSE}
+library(data.table)
+library(nycflights13)
+library(microbenchmark)
+library(tidyverse)
+```
+
+```{r echo=FALSE}
+options(datatable.print.topn = 2)
+```
+
+
+The data set we'll be working with in this post comes from the [__`nycflights13`__](https://cran.r-project.org/package=nycflights13) package. It shows on-time data for all flights that departed NYC in 2013.
+
+```{r}
+(flights_dt <- as.data.table(flights)) # convert to a data.table
+```
+
+```{r}
+paste(dim(flights_dt), c("rows", "columns"))
+```
+
+
+## Demo
+
+### The basics
+
+If you're familiar with `SQL`, `data.table` syntax should make a good amount of sense. The syntax allows you to do a lot more than the common operations we expect with a base `data.frame`. Here is the general form of `data.table` syntax:
+
+```{r eval = FALSE}
+DT[i, j, by]
+```
+
+- `i`: where (subset) / order by (sort)
+- `j`: select (grab certain columns) / update (add/modify columns)
+- `by`: group by
+
+![](https://miro.medium.com/max/700/1*odc8US0simd-2Le1OHwlhw.png)
+
+Image source: [Blazing Fast Data Wrangling With R data.table](https://towardsdatascience.com/blazing-fast-data-wrangling-with-r-data-table-de5045cc4b4d)
+
+To demonstrate, let's take a look at each of these components.
+
+#### Subset and sort with `i`
+
+```{r}
+# flights departing in January
+flights_dt[month == 1]
+# flights departing on March 10th
+flights_dt[month == 3 & day == 10]
+# flights where the total delay (dep_delay + arr_delay) is 10 minutes or more,
+# the destination was Dallas (DFW) and was in January, February, or March
+flights_dt[(dep_delay + arr_delay) >= 10 & dest == "DFW" & month <= 3]
+```
+
+We can also sort using `i`:
+
+```{r}
+# sort by total delay
+flights_dt[order(dep_delay + arr_delay, decreasing = T)]
+```
+
+#### Select and create new columns using `j`
+
+This first example shows how to select a column. It looks very similar to what we'd do in base R. 
+
+```{r}
+# get flight destination
+destination <- flights_dt[, dest]
+head(destination)
+```
+
+You'll notice that the result of the previous operation was a vector. Sometimes this is what we want, other times it's not. So, how can we select a column and have a `data.table` returned instead of a vector?
+
+We can use `.(column_I_want, another_column_I_want)` or `list(this_column_too, and_this_one_also)`.
+
+```{r}
+# use .(columns_to_select) or list(columns_to_select)
+# .(columns_to_select) acts as "shorthand" for list(columns_to_select)
+flights_dt[,.(dest)]
+# we can select multiple columns using .()
+flights_dt[,.(year, month, day, origin, dest)]
+# rename columns
+flights_dt[,.(Origin = origin, Destination = dest)]
+```
+
+We can create columns using `:=`:
+
+```{r}
+# create total delay column
+flights_dt[,total_delay := arr_delay + dep_delay]
+```
+
+![](https://media.giphy.com/media/l2JIk0sWj9sUvbvCU/giphy.gif)
+
+One major difference between "standard" operations in R and some operations in `data.table` is that `data.table` will make [__modifications in place__](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reference-semantics.html#section-2), meaning we don't have to use the assignment operator (`<-` or `=`).
+
+<br>
+<br>
+
+If we expect `flights_dt`, we can confirm that the `total_delay` column was added.
+
+```{r}
+flights_dt
+# remove that column
+flights_dt[,total_delay:=NULL] 
+flights_dt
+# add multiple columns
+flights_dt[, `:=`(date = lubridate::ymd(paste(year, month, day, sep = "-")),
+                  log_distance = log(distance),
+                  air_time_in_hours = air_time / 60)]
+flights_dt
+```
+
+#### Grouping with `by`
+
+In the first two examples, we use `.N`, which is a [special symbol](https://rdatatable.gitlab.io/data.table/reference/special-symbols.html) which allows us to count rows in our data. `.SD`, which is used later on in this post, is also a special symbol in __`data.table`__.
+
+A simple example, counting by origin of flight.
+
+```{r}
+flights_dt[,.N,origin]
+```
+
+A little more complicated, counting by origin and destination, then sorting to show most frequent, then slice top 10 rows.
+
+```{r}
+flights_dt[,.N, .(origin, dest)][order(-N)][1:10]
+```
+
+To wrap up this section, let's show the median and average total delay by origin and destination airport, and then sort by average total delay. We also add in `.N`, because it's always good to show the sample size.
+
+```{r}
+flights_dt[!is.na(arr_delay) & !is.na(dep_delay),
+           .(avg_delay = mean(arr_delay + dep_delay),
+             median_delay = median(arr_delay + dep_delay),
+             .N),
+           .(origin, dest)
+           ][order(-avg_delay)]
+```
+
+### A little more advanced
+
+![Turning it up](https://media.giphy.com/media/5MGFEJS7FIxK8/giphy.gif)
+
+We often want to perform multiple operations on a single `data.frame`. If we keep all of the code to perform these operations on a single line, our scripts can become illegible and unwieldy. Similar to how __`tidyverse`__ pipes might span multiple lines:
+
+```{r eval=FALSE}
+data %>%
+  mutate(new_columns) %>%
+  group_by(grouping_columns) %>%
+  summarise(other_columns) %>%
+  arrange(desc(some_column))
+```
+
+We can "chain" __`data.table`__ expressions:
+
+```{r eval = FALSE}
+DT[ ...
+   ][ ...
+     ][ ...
+       ]
+```
+
+This example gets the cumulative total delay over the course of a year by origin airport. It utilizes filtering, sorting, and grouping.
+
+```{r}
+# get cumulative delay by origin airport
+# uses "chaining"
+cumulative_delay_by_origin <-
+  flights_dt[!is.na(dep_delay) & !is.na(arr_delay) # keep valid flights
+             ][order(time_hour),                   # sort by date 
+               .(time_hour,                        # select date and cumsum delay
+                 cumu_delay=cumsum(arr_delay+dep_delay)), 
+               origin]                             # group by origin airport
+
+ggplot(cumulative_delay_by_origin,
+       aes(time_hour, cumu_delay/60, colour = origin))+
+  geom_line()+
+  theme_bw()+
+  xlab("Date") + ylab("Cumulative total delay (hours)")
+```
+
+Let's get even crazier with chaining.
+
+The next example finds the "biggest loser" on each day (i.e. which flight had the worst total delay). We then count up (using the `ones` column) which origin airport the biggest loser was departing from. We calculate this cumulatively over the course of the year.
+
+```{r}
+top_delay <- flights_dt[!is.na(arr_delay) & !is.na(dep_delay)
+                        ][,`:=`(total_delay=arr_delay+dep_delay, ones=1)
+                          ][, .SD[ which.max(total_delay) ], date
+                            ][order(date)
+                              ][,.(cumu_obs = cumsum(ones), date),.(origin)]
+
+ggplot(top_delay, aes(date, cumu_obs, colour = origin))+
+  geom_line()+
+  theme_bw()+
+  xlab("Date")+
+  ylab("Cumulative # of Days with Worst Delay")
+```
+
+
+### Performance evaluation: base __`R`__, __`tidyverse`__, and __`data.table`__
+
+Let's demonstrate a typical calculation you might do in R: an aggregation of two columns based on grouping by three columns. In this specific example, we're calculating the average departure delay and average arrival delay by origin airport, destination airport, and month of flight.
+
+```{r cache = TRUE}
+set.seed(1848)
+benchmark_data <- microbenchmark(
+  # base R solution
+  base_R = aggregate(list(flights$dep_delay, flights$arr_delay),
+                     list(flights$origin, flights$dest, flights$month),
+                     mean, na.rm = TRUE),
+  # tidyverse solution
+  tidy_verse = flights %>% 
+    group_by(origin, dest, month) %>% 
+    summarise_at(c("dep_delay", "arr_delay"), mean, na.rm = TRUE),
+  
+  #data.table
+  data_table = flights_dt[,lapply(.SD, mean, na.rm = TRUE), 
+                          .(origin, dest, month), 
+                          .SDcols = c("dep_delay", "arr_delay")],
+  
+  times = 100)
+
+```
+
+```{r message=FALSE}
+library(ggridges)
+benchmark_data_dt <- as.data.table(benchmark_data)
+benchmark_data_dt[,time_in_ms := time / 1000000]
+
+ggplot(benchmark_data_dt, aes(x = time_in_ms, y = expr))+
+  geom_density_ridges2(rel_min_height = 0.01, scale = 1.5, fill = "#c5050c")+
+  geom_boxplot(width = 0.25)+
+  theme_bw()+
+  scale_x_log10("Time (milliseconds, log10)")+
+  scale_y_discrete("Operation",
+                   labels = c("base_R" = "Base R",
+                              "tidy_verse" = "tidyverse",
+                              "data_table" = "data.table"))+
+  ggtitle("Grouped Aggregation Timing Summary")
+```
+
+Here is how much slower the median operation is compared to `data.table`. Since this _is_ a tutorial about __`data.table`__, we use its [`dcast`](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reshape.html) function to convert long data to wide.
+
+```{r}
+dcast(benchmark_data_dt, 
+      .~expr, 
+      value.var = "time_in_ms", 
+      fun = median)[, round(.SD/data_table,1), 
+                    .SDcols = c("base_R", "tidy_verse", "data_table")]
+```
+
+
+[Here's a more complete reference](https://h2oai.github.io/db-benchmark/) on benchmarking, with comparisons across R and Python.
+
+## Summary
+
+I hope this was a gentle introduction to the [__`data.table`__](https://rdatatable.gitlab.io/data.table/) package. I think the key to getting off on the right foot with this package is understanding the syntax.
+
+The syntax allows you to do a lot more than the common operations we expect with a base `data.frame`. Here is the general form of __`data.table`__ syntax:
+
+```{r eval = FALSE}
+DT[i, j, by]
+```
+
+- `i`: where (subset) / order by (sort)
+- `j`: select (grab certain columns) / update (add/modify columns)
+- `by`: group by
+
+![](https://miro.medium.com/max/700/1*odc8US0simd-2Le1OHwlhw.png)
+
+Image source: [Blazing Fast Data Wrangling With R data.table](https://towardsdatascience.com/blazing-fast-data-wrangling-with-r-data-table-de5045cc4b4d)
+
+By no means did I intend for this introduction to be an exhaustive guide to all things __`data.table`__. If you're interested in exploring the package further, take a look at these resources:
+
+- [Introduction to data.table](https://cran.r-project.org/web/packages/data.table/vignettes/datatable-intro.html)
+- [`data.table` cheat sheet](https://s3.amazonaws.com/assets.datacamp.com/img/blog/data+table+cheat+sheet.pdf)
+- [`data.table` examples](https://rdatatable.gitlab.io/data.table/reference/data.table.html#examples)
+- [Advanced tips and tricks with data.table](https://brooksandrew.github.io/simpleblog/articles/advanced-data-table/)
+- [Blazing Fast Data Wrangling With R data.table](https://towardsdatascience.com/blazing-fast-data-wrangling-with-r-data-table-de5045cc4b4d)
+- [Chapter 3: Tables](https://franknarf1.github.io/r-tutorial/_book/tables.html#tables)
+
+## Fun fact
+
+Fun `R` fact: `<-` and `=` are actually functions, and can be called like so:
+
+```{r}
+`<-`(x, 1:5)
+x
+`=`(x, 5:1)
+x
+`<-`(x, c(rev(x), x))
+x
+`<-`("ill-advised variable name", 1:3)
+`ill-advised variable name`
+```
+
+
