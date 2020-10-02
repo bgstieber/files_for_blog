@@ -276,7 +276,8 @@ results_pop_census <- results_and_pop_density %>%
 model2 <- glm(cbind(votes_dem, votes_gop) ~ I(log(population_density))+
                 I(log(inc))+edu_pct + state_abbr + I(log1p(two_party_2012)),
               data = results_pop_census,
-              family = 'binomial')
+              family = 'binomial',
+              na.action = na.exclude)
 # extract residuals
 results_pop_census$resid_model2 <- resid(model2, type = 'response')
 # join up to geographic data
@@ -290,9 +291,9 @@ results_pop_census_map %>%
     ggplot(aes(long, lat, group = group, fill = resid_model2))+
     geom_polygon(colour = rgb(0.9,0.9,0.9, .1))+
     geom_polygon(data = map_data('state'), fill = NA, colour = 'white')+
-    scale_fill_gradientn(values = rescale(c(-.16, -.05, -.02, 0, .02, .05, .16)),
+    scale_fill_gradientn(values = rescale(c(-.18, -.05, -.02, 0, .02, .05, .18)),
                          colours = brewer_pal(palette = 'PiYG')(7),
-                         limits = c(-.16, .16),
+                         limits = c(-.18, .18),
                          name = 'Prediction Error (pink underestimates Trump, green underestimates Clinton)')+
     theme_minimal()+
     theme(axis.text = element_blank(),
@@ -326,9 +327,9 @@ top_n(results_pop_census, 10, resid_model2) %>%
     ggplot(aes(reorder(paste0(county_name, ', ', state_abbr), resid_model2), resid_model2))+
     geom_col(aes(fill = resid_model2), colour = 'black')+
     coord_flip()+
-    scale_fill_gradientn(values = rescale(c(-.16, -.05, -.02, 0, .02, .05, .16)),
+    scale_fill_gradientn(values = rescale(c(-.18, -.05, -.02, 0, .02, .05, .18)),
                          colours = brewer_pal(palette = 'PiYG')(7),
-                         limits = c(-.16, .16),
+                         limits = c(-.18, .18),
                          name = 'Prediction Error (pink underestimates Trump, green underestimates Clinton)')+
     theme(legend.position = 'none')+
     xlab('')+
@@ -354,7 +355,7 @@ states_map <- map_data('state') %>%
 
 state_median <- results_pop_census %>%
     group_by(state_abbr) %>%
-    summarise(median_residual = median(resid_model2))
+    summarise(median_residual = median(resid_model2, na.rm = TRUE))
 ```
 
 
@@ -363,9 +364,9 @@ state_median %>%
    inner_join(states_map) %>%
     ggplot(aes(x = long, y = lat, group = group, fill = median_residual))+
     geom_polygon(colour = rgb(0.9,0.9,0.9, .4))+
-    scale_fill_gradientn(values = rescale(c(-.031, -.005, 0, .005, .031)),
+    scale_fill_gradientn(values = rescale(c(-.032, -.005, 0, .005, .032)),
                          colours = brewer_pal(palette = 'PiYG')(5),
-                         limits = c(-.031, .031),
+                         limits = c(-.032, .032),
                          breaks = c(-.02, 0, .02),
                          name = 'Prediction Error (pink underestimates Trump, green underestimates Clinton)')+
     theme_minimal()+
