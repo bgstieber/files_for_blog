@@ -21,7 +21,7 @@ roll_sum_7 <- function(x){
 ```
 
 ```{r cache = TRUE}
-full_data_link <- "https://opendata.arcgis.com/datasets/b913e9591eae4912b33dc5b4e88646c5_10.csv"
+full_data_link <- "https://opendata.arcgis.com/datasets/b913e9591eae4912b33dc5b4e88646c5_10.csv?outSR=%7B%22latestWkid%22%3A3857%2C%22wkid%22%3A102100%7D"
 
 full_data.base <- read_csv(full_data_link, guess_max = 25000) %>%
   mutate(DATE = as.Date(DATE, "%Y/%m/%d"))
