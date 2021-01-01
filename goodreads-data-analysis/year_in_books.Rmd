@@ -1,0 +1,48 @@
+---
+title: 'My Year in Books: Goodreads Data Analysis'
+author: "Brad Stieber"
+date: ""
+output: html_document
+---
+
+```{r echo = FALSE, message=FALSE, warning=FALSE, error=FALSE}
+library(tidyverse)
+library(lubridate)
+
+goodreads_data <- read_csv("goodreads_library_export.csv")
+
+
+books_2020 <- goodreads_data %>%
+  filter(year(`Date Read`) == 2020) %>%
+  mutate(page_count = ifelse(grepl("Be a Player",
+                                   Title),
+                             256,
+                             `Number of Pages`),
+         rating_diff = `My Rating` - `Average Rating`,
+         publish_year = coalesce(`Original Publication Year`,
+                                  `Year Published`)) %>%
+  rename(date_read = `Date Read`)
+```
+
+
+In 2020, I set a goal of reading 30 books. Aided by a last minute charge, I was able to hit this number. I finished my 30th book on December 31 `r emo::ji("tada")`.
+
+As I was finishing up my year of reading, I started thinking about some of the statistics of my year in books:
+
+- How many pages, on average, was I reading per day?
+- Did I have any slumps during the year? If so, how could the slumps be explained?
+- What would be a reasonable "stretch goal" for 2021?
+
+## Getting the Data
+
+Getting Goodreads data isn't too difficult. They have a great export tool if you follow [this link](https://www.goodreads.com/review/import), you can export your library. Be warned that if you have a lot of books in your library, the export can take a long time. This export comes with `r ncol(goodreads_data)` columns, but for this analysis, the main columns I'm interested in are __Date Read__, __My Rating__ (what I rated the book, 0-5 stars), __Average Rating__, and __Number of Pages__, __Original Publication Year__. I added [my data] to a GitHub repository.
+
+
+
+## Trends and Analysis
+
+
+## 2021 Goal
+
+
+## Wrapping Up
