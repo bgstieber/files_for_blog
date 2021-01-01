@@ -37,9 +37,6 @@ def get_goodreads_data(book_id):
                         columns = ['book_id', 'description'])
     
     
-
-import os
-os.chdir("C:\\Users\\bgsti\\Documents\\files_for_blog\\goodreads-data-analysis")
     
 goodreads_file = pd.read_csv("goodreads_library_export.csv")
 books_2020 = goodreads_file[pd.to_datetime(goodreads_file['Date Read'], format = "%Y/%m/%d") >= "2020-01-01"]

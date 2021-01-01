@@ -35,7 +35,9 @@ As I was finishing up my year of reading, I started thinking about some of the s
 
 ## Getting the Data
 
-Getting Goodreads data isn't too difficult. They have a great export tool if you follow [this link](https://www.goodreads.com/review/import), you can export your library. Be warned that if you have a lot of books in your library, the export can take a long time. This export comes with `r ncol(goodreads_data)` columns, but for this analysis, the main columns I'm interested in are __Date Read__, __My Rating__ (what I rated the book, 0-5 stars), __Average Rating__, and __Number of Pages__, __Original Publication Year__. I added [my data] to a GitHub repository.
+Getting Goodreads data isn't too difficult. They have a great export tool if you follow [this link](https://www.goodreads.com/review/import), you can export your library. Be warned that if you have a lot of books in your library, the export can take a long time. This export comes with `r ncol(goodreads_data)` columns, but for this analysis, the main columns I'm interested in are __Date Read__, __My Rating__ (what I rated the book, 0-5 stars), __Average Rating__, and __Number of Pages__, __Original Publication Year__. I added [my data](https://github.com/bgstieber/files_for_blog/blob/master/goodreads-data-analysis/goodreads_library_export.csv) to a [GitHub repository](https://github.com/bgstieber/files_for_blog/tree/master/goodreads-data-analysis). 
+
+One thing that's missing from the Goodreads data export is the description of the book. I wrote a [python script]() that uses BeautifulSoup to scrape Goodreads for this information. I don't use it in _this post_, but I could see using it in a different post down the road.
 
 
 
