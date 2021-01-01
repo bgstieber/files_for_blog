@@ -99,7 +99,7 @@ Even though this is a pretty basic data vis, I can find a few things that stand 
 
 In the code below, I create a `data.frame` with cumulative pages and books read by date.
 
-```{r}
+```{r message = FALSE}
 summary_by_date <- books_2020 %>%
   group_by(date_read, Title) %>%
   summarise(pages = sum(page_count),
@@ -121,28 +121,41 @@ summary_by_date <- books_2020 %>%
 Using this data, I can look at my progress toward 30 books through the year.
 
 ```{r echo=FALSE}
-books_read <- summary_by_date %>%
-    ggplot(aes(date_read, cumu_books_read))+
-    geom_line()+
-    geom_point()+
-    xlab("Date")+
-    ylab("Cumulative Books Read")+
-    ggtitle("Books Read in 2020")
-
-
-pages_read <- summary_by_date %>%
+summary_by_date %>%
     ggplot(aes(date_read, cumu_pages_read))+
     geom_line()+
-    geom_point()+
+    geom_text(aes(y = cumu_pages_read + 300, 
+                  label = ifelse(cumu_books_read == 0,
+                                 "", cumu_books_read)))+
     xlab("Date")+
     scale_y_continuous("Cumulative Pages Read",
                        labels = comma)+
-    ggtitle("Pages Read in 2020")
+    ggtitle("My Year in Books: Running Total of Pages Read in 2020")
 ```
 
+```{r echo = FALSE, message = FALSE}
+year_summary <- summary_by_date %>%
+    filter(!is.na(previous_date)) %>%
+    mutate(avg_pages = pages / days_since_last_book) %>%
+    select(previous_date, date_read, pages, avg_pages) %>%
+    rowwise() %>%
+    mutate(actual_day = list(seq.Date(previous_date, date_read, by = "days"))) %>%
+    unnest(actual_day) %>%
+    mutate(month_grouping = ifelse(month(actual_day) <= 5, "Jan_May",
+                                   ifelse(month(actual_day) <= 9, "Jun_Sep", 
+                                          "Oct_Dec"))) 
+
+month_summary_wide <- year_summary %>%
+  group_by(month_grouping) %>%
+  summarise(avg_pages = mean(avg_pages)) %>%
+  pivot_wider(names_from = month_grouping, 
+              values_from = avg_pages)
+
+```
+
+My reading certainly slowed down during the summer months. Most of this is due to me doing other things during a warm Wisconsin weather: playing golf and riding my bike. Between January and May I read an average of `r round(month_summary_wide$Jan_May, 1)` pages per day, between June and September, I read about `r round(month_summary_wide$Jun_Sep, 1)` pages per day, and finishing off the year, I read `r round(month_summary_wide$Oct_Dec, 1)` per day from October through the end of the year. 
 
 
-< how long are the books I read? >
 
 < when are they from >
 
