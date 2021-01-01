@@ -56,9 +56,11 @@ books_2020 %>%
   geom_point()
 
 summary_by_date <- books_2020 %>%
-  group_by(date_read) %>%
+  group_by(date_read, Title) %>%
   summarise(pages = sum(page_count)) %>%
+  ungroup() %>%
   bind_rows(tibble(date_read = as.Date("2020-01-01"),
+                   Title = NA_character_,
                    pages = 0)) %>%
   arrange(date_read) %>%
   mutate(previous_date = lag(date_read)) %>%
