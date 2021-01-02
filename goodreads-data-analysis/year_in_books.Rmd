@@ -219,6 +219,8 @@ I was reading at a pretty consistent pace in the beginning of the year, declined
 
 ```{r echo = FALSE}
 days_to_read <- mean(summary_by_date$days_since_last_book, na.rm = TRUE)
+reading_pace <- sum(books_2020$page_count) / 365
+
 
 trotd <- summary_by_date %>%
   filter(Title == "The Remains of the Day")
@@ -255,6 +257,16 @@ This represents an increase of `r percent((ceiling(365/days_to_read.gb) - 30) / 
 
 ## Wrapping Up
 
-Summary statistics:
+In 2020, I set a goal to finish 30 books. On December 31st, I finished _The Art of Solitude_ and completed my reading goal. I explored my Goodreads data to summarize my year in books:
+
+- I read a total of `r comma(sum(books_2020$page_count))` pages in 2020, the average length of a book I read in 2020 was `r round(mean(books_2020$page_count), 1)` pages
+- I read at a pace of `r round(reading_pace, 1)` pages per day
+- On average it took me about `r round(days_to_read, 1)` days to complete each book
+- The longest it took me to finish a book was `r max(summary_by_date$days_since_last_book, na.rm = TRUE)` days (_Never Let Me Go_), my shortest read time was `r min(summary_by_date$days_since_last_book, na.rm = TRUE)` days (_The Art of Solitude_)
+- My average rating was `r round(mean(books_2020$my_rating), 1)` stars, the average Goodreads rating of the books I read was `r round(mean(books_2020$avg_rating), 1)` stars
+
+I also used the Goodreads data to set a reasonable stretch goal for 2021. I hope to increase my reading by `r percent((ceiling(365/days_to_read.gb) - 30) / 30)` in 2021 by finishing `r ceiling(365/days_to_read.gb)` books.
+
+This was a fun way to look back on my year in books for 2020. There are a few others that I could look into like the distribution of genres, the text summary of the book, and text reviews from other Goodreads users. That analysis will have to wait for another day!
 
 Happy reading!
