@@ -1,5 +1,5 @@
 ---
-title: 'My Year in Books: Goodreads Data Analysis'
+title: 'My Year in Books: Goodreads Data Analysis in R'
 author: "Brad Stieber"
 date: ""
 output: html_document
@@ -11,7 +11,10 @@ library(lubridate)
 library(scales)
 theme_set(theme_bw())
 
-goodreads_data <- read_csv("goodreads_library_export.csv") %>%
+gh_link1 <- "https://github.com/bgstieber/files_for_blog/raw/master/"
+gh_link2 <- "goodreads-data-analysis/goodreads_library_export.csv"
+
+goodreads_data <- read_csv(paste0(gh_link1, gh_link2)) %>%
   mutate(`Number of Pages` = ifelse(grepl("Be a Player",
                                           Title),
                                     256, `Number of Pages`))
@@ -35,17 +38,23 @@ rev_date <- c_trans("reverse", "time")
 ```
 
 
-In 2020, I set a goal of reading 30 books. Aided by a last minute charge, I was able to hit this number. I finished my 30th book on December 31 `r emo::ji("tada")`.
+In 2020, I set a goal of reading 30 books. Aided by a last minute charge, I managed to hit this number. I finished my 30th book on December 31st `r emo::ji("tada")`.
 
 As I was finishing up my year of reading, I started thinking about some of the statistics of my year in books:
 
-- How many pages, on average, was I reading per day?
+- On average, how many pages did I read per day?
 - Did I have any slumps during the year? If so, could the slumps be explained?
-- What would be a reasonable "stretch goal" for 2021?
+- What would be a reasonable reading goal for 2021?
+
+I tracked all of my books using [Goodreads](https://www.goodreads.com/), so I started poking around on the Goodreads website to see if I could access my library.
+
+I used the [__`tidyverse`__](https://www.tidyverse.org/), [__`lubridate`__](https://lubridate.tidyverse.org/), and [__`scales`__](https://scales.r-lib.org/) packages in this analysis. You can find the code for this analysis [on my GitHub](https://github.com/bgstieber/files_for_blog/tree/master/goodreads-data-analysis).
 
 ## Getting the Data
 
-Getting Goodreads data isn't too difficult. They have a great export tool if you follow [this link](https://www.goodreads.com/review/import), you can export your library. Be warned that if you have a lot of books in your library, the export can take a long time. This export comes with `r ncol(goodreads_data)` columns, but for this analysis, the main columns I'm interested in are __Date Read__, __My Rating__ (what I rated the book, 0-5 stars), __Average Rating__, __Number of Pages__, and __Original Publication Year__. I added [my data](https://github.com/bgstieber/files_for_blog/blob/master/goodreads-data-analysis/goodreads_library_export.csv) to a [GitHub repository](https://github.com/bgstieber/files_for_blog/tree/master/goodreads-data-analysis). 
+Getting Goodreads data isn't too difficult. They have a great export tool, and if you follow [this link](https://www.goodreads.com/review/import), you can export your library. Be warned that if you have a lot of books in your library, the export can take a long time. The data export comes with `r ncol(goodreads_data)` columns. 
+
+For this analysis, the columns I'm interested in are __Date Read__, __My Rating__ (what I rated the book, 0-5 stars), __Average Rating__, __Number of Pages__, and __Original Publication Year__. I added [my data](https://github.com/bgstieber/files_for_blog/blob/master/goodreads-data-analysis/goodreads_library_export.csv) to a [GitHub repository](https://github.com/bgstieber/files_for_blog/tree/master/goodreads-data-analysis). 
 
 One thing that's missing from the Goodreads data export is the description of the book. I wrote a [python script](https://github.com/bgstieber/files_for_blog/blob/master/goodreads-data-analysis/scrape_goodreads.py) that uses [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/) to scrape Goodreads for this information. I don't use it in _this post_, but I could see using it in a different post down the road.
 
@@ -53,19 +62,23 @@ The data from Goodreads is mostly good to go, but there are a few tweaks to make
 
 ```{r}
 books_2020 <- goodreads_data %>%
+  # only 2020 books
   filter(year(`Date Read`) == 2020) %>%
+  # create rating_diff and publish_year columns
   mutate(rating_diff = `My Rating` - `Average Rating`,
          publish_year = coalesce(`Original Publication Year`,
                                   `Year Published`)) %>%
+  # clean some column names
   rename(date_read = `Date Read`,
          page_count = `Number of Pages`,
          avg_rating = `Average Rating`,
          my_rating = `My Rating`) %>%
+  # add when the previous book was finished, sort then lag
   arrange(date_read) %>%
   mutate(previous_book_date = lag(date_read))
 ```
 
-For this analysis, I make the assumption that I read only one book at a time (not always true), and that I start reading a book immediately after I finish the previous one (also not always true).
+For this analysis, I make the assumption that I read only one book at a time (not always true), and that I start reading a book immediately after I finish the previous one (not always true either).
 
 ## Trends and Analysis
 
@@ -87,16 +100,17 @@ books_2020 %>%
           axis.title.x = element_blank(),
           panel.grid.major.x = element_blank(),
           panel.grid.minor.x = element_blank())+
-    ggtitle("My Year in Books: 2020")
+    ggtitle("My Year in Books: 2020 Timeline")
 ```
 
-Sometimes the most basic data visualizations present the most compelling information. Here are a few things that stood out to me:
+__Sometimes the most basic data visualizations present the most compelling information.__
 
-- My sprint at the end of the year to get to thirty books
-- A few books with longer read times: __The Remains of the Day__, __Never Let Me Go__, and __Be a Player__ (to a lesser extent)
+Here are a few things that stood out to me:
+
+- My sprint at the end of the year to hit my reading goal
+- A few books with longer read times: _The Remains of the Day_, _Never Let Me Go_, and _Be a Player: How to Become a Better Golfer Every Time You Play_ (to a lesser extent)
   + These will come up again in calculating my 2021 goal
-- Apart from the few books mentioned above, I had somewhat consistent read times for my 2020 books
-  + What might be driving this?
+- Apart from the few books mentioned above, I had pretty consistent read times for my 2020 books. What might be driving this?
 
 In the code below, I create a `data.frame` with cumulative pages and books read by date.
 
@@ -106,6 +120,7 @@ summary_by_date <- books_2020 %>%
   summarise(pages = sum(page_count),
             books = n()) %>%
   ungroup() %>%
+  # add dummy data for beginning of year
   bind_rows(tibble(date_read = as.Date("2020-01-01"),
                    Title = NA_character_,
                    pages = 0,
@@ -154,11 +169,11 @@ month_summary_wide <- year_summary %>%
 
 ```
 
-My reading certainly slowed down during the summer months. Most of this is due to me doing other things during a warm Wisconsin weather: playing golf and riding my bike. Between January and May I read an average of `r round(month_summary_wide$Jan_May, 1)` pages per day, between June and September, I read about `r round(month_summary_wide$Jun_Sep, 1)` pages per day, and finishing off the year, I read `r round(month_summary_wide$Oct_Dec, 1)` per day from October through the end of the year. 
+My reading certainly slowed down during the summer months. Most of this is due to me doing other things during a beautiful Wisconsin summer like playing golf and riding my bike. Between January and May, I read an average of `r round(month_summary_wide$Jan_May, 1)` pages per day, between June and September, I read about `r round(month_summary_wide$Jun_Sep, 1)` pages per day, and finishing off the year, I read `r round(month_summary_wide$Oct_Dec, 1)` pages per day from October through the end of the year. 
 
 For most of the year, I had a fairly consistent reading pace. I think a lot of this can be explained by choosing shorter books in 2020. `r percent(mean(books_2020$page_count < 400))` of the books I read this year were less than 400 pages long. 
 
-Another interesting aspect of the books I read in 2020 were that they were mostly "modern". `r percent(mean(books_2020$publish_year >= 1990))` of the books I read in 2020 were published in 1990 or later.
+Another interesting aspect of the books I read in 2020 was that they were mostly modern. `r percent(mean(books_2020$publish_year >= 1990))` of the books I read in 2020 were published in 1990 or later.
 
 ```{r}
 books_2020 %>%
@@ -172,7 +187,9 @@ books_2020 %>%
                             "in 1990 or later."))
 ```
 
-Finally, let's take a look at how my rating of a book compared to the average rating from other Goodreads users:
+The oldest book I read was _`r books_2020[which.min(books_2020$publish_year),]$Title`_ by `r books_2020[which.min(books_2020$publish_year),]$Author`, published in `r books_2020[which.min(books_2020$publish_year),]$publish_year`. 
+
+Finally, let's take a look at how my rating of a book compared to the average rating from other Goodreads users.
 
 ```{r fig.width=8.5}
 books_2020 %>%
@@ -190,7 +207,7 @@ books_2020 %>%
     ylab("My Rating - Goodreads Avg")+
     theme(legend.position = "top",
           axis.text.y = element_text(size = 8))+
-    ggtitle("How did my ratings compare\nto the Goodreads average?")
+    ggtitle("My Rating Versus the Goodreads Average")
 ```
 
 My average rating in 2020 was `r round(mean(books_2020$my_rating), 1)`, the average Goodreads rating of the books I read in 2020 was `r round(mean(books_2020$avg_rating), 1)`.
@@ -245,11 +262,11 @@ days_to_read.gb <- mean(good_books$days_since_last_book)
 reading_pace.gb <- sum(good_books$pages) / sum(good_books$days_since_last_book)
 ```
 
-On average, it took me about `r round(days_to_read, 1)` days to finish a book in 2020 (you can check my math, 365/`r round(days_to_read, 1)` ~= 30). I read at a pace of about `r round(sum(summary_by_date$pages)/365, 1)` pages per day.
+On average, it took me about `r round(days_to_read, 1)` days to finish a book in 2020. I read at a pace of about `r round(sum(summary_by_date$pages)/365, 1)` pages per day.
 
 There were a few clear outliers with respect to reading pace throughout the year. I read two novels (_The Remains of the Day_ and _Never Let Me Go_, both by Kazuo Ishiguro) very slowly, they took `r trotd$days_since_last_book` and `r nlmg$days_since_last_book` days to read, respectively `r emo::ji("turtle")`. I also read two books at a very fast pace (_Red Queen_ and _The Art of Solitude_), where I was reading at a pace of `r round(rqu$pages/rqu$days_since_last_book, 1)` and `r round(taos$pages/taos$days_since_last_book, 1)` pages per day, respectively `r emo::ji("rabbit2")`.
 
-If we eliminate these four books, we're left with a set of books that more closely reflects my typical or baseline reading pace. Looking only at those books, I was reading at a pace of about `r round(reading_pace.gb, 1)` pages per day, taking about `r round(days_to_read.gb, 1)` days to finish a book.
+If we eliminate those four books, we're left with a set of books that more closely reflects my typical or baseline reading pace. Looking only at those books, I was reading at a pace of about `r round(reading_pace.gb, 1)` pages per day, taking about `r round(days_to_read.gb, 1)` days to finish a book.
 
 Using the pace of `r round(days_to_read.gb, 1)` days to finish a book, I could create a goal of reading 365/`r round(days_to_read.gb, 1)` = `r round(365/days_to_read.gb, 1)` books in 2021. Rounding up, I'll set a goal of `r ceiling(365/days_to_read.gb)` books in 2021. 
 
@@ -265,8 +282,8 @@ In 2020, I set a goal to finish 30 books. On December 31st, I finished _The Art 
 - The longest it took me to finish a book was `r max(summary_by_date$days_since_last_book, na.rm = TRUE)` days (_Never Let Me Go_), my shortest read time was `r min(summary_by_date$days_since_last_book, na.rm = TRUE)` days (_The Art of Solitude_)
 - My average rating was `r round(mean(books_2020$my_rating), 1)` stars, the average Goodreads rating of the books I read was `r round(mean(books_2020$avg_rating), 1)` stars
 
-I also used the Goodreads data to set a reasonable stretch goal for 2021. I hope to increase my reading by `r percent((ceiling(365/days_to_read.gb) - 30) / 30)` in 2021 by finishing `r ceiling(365/days_to_read.gb)` books.
+I also used the Goodreads data to set a data-driven reading goal for 2021. I hope to increase my reading by `r percent((ceiling(365/days_to_read.gb) - 30) / 30)` in 2021 by finishing `r ceiling(365/days_to_read.gb)` books.
 
-This was a fun way to look back on my year in books for 2020. There are a few others that I could look into like the distribution of genres, the text summary of the book, and text reviews from other Goodreads users. That analysis will have to wait for another day!
+This was a fun way to look back on my year in books for 2020. There are a few aspects of this data that I could look into like the distribution of genres, the text summary of the book, and text reviews from other Goodreads users. That analysis will have to wait for another day!
 
 Happy reading!
