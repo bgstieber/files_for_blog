@@ -387,8 +387,8 @@ summary {
 gh_link2 &lt;- &quot;goodreads-data-analysis/goodreads_library_export.csv&quot;
 
 goodreads_data &lt;- read_csv(paste0(gh_link1, gh_link2)) %&gt;%
-  mutate(`Number of Pages` = ifelse(grepl(&quot;Be a Player&quot;,
-                                          Title),
+  # fix issue with data export for a book
+  mutate(`Number of Pages` = ifelse(grepl(&quot;Be a Player&quot;, Title),
                                     256, `Number of Pages`))
 
 books_2020 &lt;- goodreads_data %&gt;%

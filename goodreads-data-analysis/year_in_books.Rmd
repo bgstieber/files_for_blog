@@ -34,8 +34,8 @@ gh_link1 <- "https://github.com/bgstieber/files_for_blog/raw/master/"
 gh_link2 <- "goodreads-data-analysis/goodreads_library_export.csv"
 
 goodreads_data <- read_csv(paste0(gh_link1, gh_link2)) %>%
-  mutate(`Number of Pages` = ifelse(grepl("Be a Player",
-                                          Title),
+  # fix data export with a book
+  mutate(`Number of Pages` = ifelse(grepl("Be a Player", Title),
                                     256, `Number of Pages`))
 ```
 
@@ -67,8 +67,8 @@ gh_link1 <- "https://github.com/bgstieber/files_for_blog/raw/master/"
 gh_link2 <- "goodreads-data-analysis/goodreads_library_export.csv"
 
 goodreads_data <- read_csv(paste0(gh_link1, gh_link2)) %>%
-  mutate(`Number of Pages` = ifelse(grepl("Be a Player",
-                                          Title),
+  # fix issue with data export for a book
+  mutate(`Number of Pages` = ifelse(grepl("Be a Player", Title),
                                     256, `Number of Pages`))
 
 books_2020 <- goodreads_data %>%
