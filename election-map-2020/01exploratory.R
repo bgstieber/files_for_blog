@@ -83,4 +83,15 @@ model_data <- full_data %>%
             ~ . / total_2016) %>%
   mutate(dem_shift_16_12 = dem_2016 - dem_2012,
          gop_shift_16_12 = gop_2016 - gop_2012,
-         oth_shift_16_12 = oth_2016 - oth_2012)
+         oth_shift_16_12 = oth_2016 - oth_2012) %>%
+  mutate(fips_n = as.numeric(county_fips))
+
+
+simple_model <- glm(cbind(votes_dem, votes_gop) ~ 
+                      I(log(pop_dens))+
+                      I(log(inc))+edu_pct
+                    ,
+                    data = model_data,
+                    family = 'binomial',
+                    na.action = na.exclude)
+
