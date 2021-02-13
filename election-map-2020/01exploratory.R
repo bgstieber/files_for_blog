@@ -71,3 +71,16 @@ full_data <- e2020 %>%
   inner_join(e_08_16) %>%
   mutate(pop_dens = pop_total / area_miles_squared,
          case_rate_per_1k = 1000 * (cases/pop_total))
+
+
+# data work, column creation, then output a final master data set
+model_data <- full_data %>%
+  select(-cases, -area_miles_squared, -pop_total, -pop_white,
+         -total_votes, -diff, -per_gop, -per_dem, -per_point_diff) %>%
+  mutate_at(c("oth_2012", "dem_2012", "gop_2012"),
+            ~ . / total_2012) %>%
+  mutate_at(c("oth_2016", "dem_2016", "gop_2016"),
+            ~ . / total_2016) %>%
+  mutate(dem_shift_16_12 = dem_2016 - dem_2012,
+         gop_shift_16_12 = gop_2016 - gop_2012,
+         oth_shift_16_12 = oth_2016 - oth_2012)
