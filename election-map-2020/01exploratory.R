@@ -129,10 +129,46 @@ model_data$pred <- predict(simple_model, type = "response")
 model_data$actual_minus_pred <- model_data$actual - model_data$pred
 
 
+
+model_data %>%
+  inner_join(county_map_with_fips) %>%
+  ggplot(aes(long, lat, group = group, 
+             fill = votes_dem / (votes_dem + votes_gop)))+
+  geom_polygon(colour = rgb(0.9,0.9,0.9, .1))+
+  geom_polygon(data = map_data('state'), fill = NA, colour = 'white')+
+  coord_map()+
+  scale_fill_gradientn(values = rescale(c(0, .3, .5, .7, 1)),
+                       colors = brewer_pal(palette = 'RdBu')(5),
+                       name = 'Trump to Biden Votes Ratio',
+                       breaks = c(1/5, 1/3, 1/2, 2/3, 4/5),
+                       labels = c('4:1', '2:1', '1:1', '1:2', '1:4'))
+
+model_data %>%
+  inner_join(county_map_with_fips) %>%
+  ggplot(aes(long, lat, group = group, 
+             fill = pop_dens))+
+  geom_polygon(colour = rgb(0.9,0.9,0.9, .1))+
+  geom_polygon(data = map_data('state'), fill = NA, colour = 'white')+
+  coord_map()+
+  scale_fill_viridis_c(trans = log_trans(2),option = 'magma',
+                       name = 'Population Density per Square Mile')
+
+model_data %>%
+  inner_join(county_map_with_fips) %>%
+  ggplot(aes(long, lat, group = group, 
+             fill = (votes_dem / (votes_dem + votes_gop)) - dem_2016_2party_share))+
+  geom_polygon(colour = rgb(0.9,0.9,0.9, .1))+
+  geom_polygon(data = map_data('state'), fill = NA, colour = 'white')+
+  coord_map()+
+  scale_fill_gradient2()
+
 model_data %>%
   inner_join(county_map_with_fips) %>%
   ggplot(aes(long, lat, group = group, fill = actual_minus_pred))+
   geom_polygon(colour = rgb(0.9,0.9,0.9, .1))+
   geom_polygon(data = map_data('state'), fill = NA, colour = 'white')+
   coord_map()+
-  scale_fill_gradient2()
+  scale_fill_gradientn(values = rescale(c(-.19, -.05, -.02, 0, .02, .05, .19)),
+                       colours = brewer_pal(palette = 'PiYG')(7),
+                       limits = c(-.19, .19),
+                       name = 'Prediction Error (pink underestimates Trump, green underestimates Biden)')
