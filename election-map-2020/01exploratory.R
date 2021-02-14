@@ -84,14 +84,28 @@ model_data <- full_data %>%
   mutate(dem_shift_16_12 = dem_2016 - dem_2012,
          gop_shift_16_12 = gop_2016 - gop_2012,
          oth_shift_16_12 = oth_2016 - oth_2012) %>%
-  mutate(fips_n = as.numeric(county_fips))
+  mutate(fips_n = as.numeric(county_fips)) %>%
+  mutate(dem_2016_2party_share = dem_2016 / (gop_2016 + dem_2016),
+         nonwhite_pct = 1 - pct_white) %>%
+  na.omit()
 
 
 simple_model <- glm(cbind(votes_dem, votes_gop) ~ 
                       I(log(pop_dens))+
-                      I(log(inc))+edu_pct
-                    ,
+                      I(log(inc))+
+                      I(log(case_rate_per_1k))+
+                      pct_edu+
+                      pct_white+
+                      dem_2016+
+                      dem_shift_16_12,
                     data = model_data,
                     family = 'binomial',
                     na.action = na.exclude)
+
+# REMEMBER: resid = actual - pred
+# starr county: https://www.texastribune.org/2020/11/13/south-texas-voters-donald-trump/
+model_data$actual <- model_data$votes_dem / (model_data$votes_gop + model_data$votes_dem)
+model_data$pred <- predict(simple_model, type = "response")
+model_data$actual_minus_pred <- model_data$actual - model_data$pred
+
 
